@@ -466,7 +466,7 @@ export default async function decorate(block) {
   console.log("langCode :"+langCode);
 
    const isAuthor = isAuthorEnvironment();
-    let navPath ='/nav';
+    let navPath =`/${langCode}/nav`;
   
     if(isAuthor){
       navPath = navMeta ? new URL(navMeta, window.location).pathname : `/content/${siteName}${PATH_PREFIX}/${langCode}/nav`;
