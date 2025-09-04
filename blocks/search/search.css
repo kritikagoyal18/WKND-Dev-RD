@@ -1,9 +1,14 @@
 /* search box */
+.search {
+  --search-input-height: 40px;
+}
+
 .search .search-box {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 1ch;
+  display: block;
+  position: relative;
   align-items: center;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .search .search-box input {
@@ -11,7 +16,8 @@
   display: block;
   width: 100%;
   margin: 0;
-  padding: 0.5em;
+  height: var(--search-input-height);
+  padding: 0 40px 0 14px;
   border-radius: 4px;
   border: 1px solid var(--dark-color);
   background-color: var(--background-color);
@@ -24,9 +30,25 @@
   border: 1px solid var(--text-color);
 }
 
-/* optional container placement if search block needs absolute positioning */
-.search-container {
-  
+.search .search-box input:focus {
+  outline: none;
+  border-color: var(--main-accent-color);
+}
+
+.search .search-box .icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.search .search-box .icon img {
+  width: 18px;
+  height: 18px;
 }
 
 /* optional cancel button appearance for webkit */
@@ -54,10 +76,18 @@ html[dir="rtl"] .search .search-box input[type="search"]::-webkit-search-cancel-
   gap: 24px;
   padding-left: 0;
   list-style: none;
+  margin-top: 16px;
 }
 
 .search ul.search-results > li {
   border: 1px solid #dadada;
+  border-radius: 8px;
+  background-color: var(--background-color);
+  transition: box-shadow 0.2s ease;
+}
+
+.search ul.search-results > li:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .search ul.search-results > li > a {
