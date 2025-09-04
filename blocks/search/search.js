@@ -1,8 +1,6 @@
 import {
   createOptimizedPicture,
-  decorateIcons,
 } from '../../scripts/aem.js';
-import { fetchPlaceholders } from '../../scripts/placeholders.js';
 
 const searchParams = new URLSearchParams(window.location.search);
 
@@ -250,20 +248,7 @@ function searchBox(block, config) {
   return box;
 }
 
-export default async function decorate(block) {
-  const placeholders = await fetchPlaceholders();
-  const source = block.querySelector('a[href]') ? block.querySelector('a[href]').href : '/query-index.json';
-  block.innerHTML = '';
-  block.append(
-    searchBox(block, { source, placeholders }),
-    searchResultsContainer(block),
-  );
-
-  if (searchParams.get('q')) {
-    const input = block.querySelector('input');
-    input.value = searchParams.get('q');
-    input.dispatchEvent(new Event('input'));
-  }
-
-  decorateIcons(block);
+export default function decorate(block) {
+  console.log('Search block placeholder');
+  block.textContent = 'Search block placeholder';
 }
