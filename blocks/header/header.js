@@ -463,7 +463,6 @@ export default async function decorate(block) {
   
   const navMeta = getMetadata('nav');
   const langCode = getLanguage();
-  console.log("langCode :"+langCode);
 
    const isAuthor = isAuthorEnvironment();
     let navPath =`/${langCode}/nav`;
