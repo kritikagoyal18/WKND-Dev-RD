@@ -24,6 +24,29 @@
   border: 1px solid var(--text-color);
 }
 
+/* optional container placement if search block needs absolute positioning */
+.search-container {
+  
+}
+
+/* optional cancel button appearance for webkit */
+.search .search-box input[type="search"]::-webkit-search-cancel-button {
+  appearance: none;
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: var(--spacing-xsmall);
+  cursor: pointer;
+  background:
+    linear-gradient(45deg, rgb(0 0 0 / 0%) 0%, rgb(0 0 0 / 0%) 43%, currentColor 45%, currentColor 55%, rgb(0 0 0 / 0%) 57%, rgb(0 0 0 / 0%) 100%),
+    linear-gradient(135deg, transparent 0%, transparent 43%, currentColor 45%, currentColor 55%, transparent 57%, transparent 100%);
+}
+
+html[dir="rtl"] .search .search-box input[type="search"]::-webkit-search-cancel-button {
+  margin-right: unset;
+  margin-left: var(--spacing-xsmall);
+}
+
 /* search results */
 .search ul.search-results {
   display: grid;
