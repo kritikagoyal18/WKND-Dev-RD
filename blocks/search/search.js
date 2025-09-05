@@ -412,6 +412,50 @@ function applyAllFilters(base, selectedDateRange) {
   return applyDateFilter(base, selectedDateRange);
 }
 
+function renderSortControls(container, selected, onChange) {
+  const group = document.createElement('div');
+  group.className = 'filter-group sort-order';
+  const title = document.createElement('h4');
+  title.textContent = 'Sort';
+  group.append(title);
+
+  const options = [
+    { key: 'relevance', label: 'Relevance' },
+    { key: 'az', label: 'Title A–Z' },
+    { key: 'za', label: 'Title Z–A' },
+  ];
+  const name = `sort-order-${Math.random().toString(36).slice(2)}`;
+  options.forEach((opt, idx) => {
+    const id = `${name}-${idx}`;
+    const label = document.createElement('label');
+    const rb = document.createElement('input');
+    rb.type = 'radio';
+    rb.name = name;
+    rb.id = id;
+    rb.checked = (selected || 'relevance') === opt.key;
+    rb.addEventListener('change', () => onChange(opt.key));
+    label.append(rb, document.createTextNode(` ${opt.label}`));
+    group.append(label);
+  });
+  container.append(group);
+}
+
+function applySort(results, order) {
+  if (!Array.isArray(results) || !results.length) return results;
+  if (order === 'az' || order === 'za') {
+    const copy = [...results];
+    copy.sort((a, b) => {
+      const at = (a.navTitle || a.title || '').toLowerCase();
+      const bt = (b.navTitle || b.title || '').toLowerCase();
+      if (at < bt) return -1;
+      if (at > bt) return 1;
+      return 0;
+    });
+    return order === 'az' ? copy : copy.reverse();
+  }
+  return results; // relevance is original order
+}
+
 async function activateExpandedSearch(block, config, searchValue, cachedData) {
   const value = (searchValue || '').trim();
   if (value.length < 3) return;
@@ -444,6 +488,7 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
 
   // state
   let selectedDateRange = block._selectedDateRange || 'any';
+  let sortOrder = block._sortOrder || 'relevance';
 
   const renderFilters = () => {
     filters.innerHTML = '';
@@ -452,10 +497,15 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
       block._selectedDateRange = selectedDateRange;
       renderList();
     });
+    renderSortControls(filters, sortOrder, (next) => {
+      sortOrder = next;
+      block._sortOrder = sortOrder;
+      renderList();
+    });
   };
 
   const renderList = () => {
-    const filtered = applyAllFilters(base, selectedDateRange);
+    const filtered = applySort(applyAllFilters(base, selectedDateRange), sortOrder);
     results.innerHTML = '';
     if (!filtered.length) {
       const msg = document.createElement('li');

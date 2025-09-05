@@ -138,6 +138,10 @@
   display: block;
 }
 
+.search .search-filters .filter-group.sort-order label {
+  display: block;
+}
+
 .search .search-filters .filter-group h4 {
   margin: 0 0 8px 0;
   font-size: var(--body-font-size-s);
