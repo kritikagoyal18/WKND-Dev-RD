@@ -244,7 +244,10 @@ function filterData(searchTerms, data) {
 }
 
 async function handleSearchImpl(e, block, config) {
-  const searchValue = e.target.value || '';
+  const inputEl = block?.querySelector?.('input.search-input');
+  const searchValue = (e && e.target && typeof e.target.value === 'string'
+    ? e.target.value
+    : (inputEl && typeof inputEl.value === 'string' ? inputEl.value : '')) || '';
   searchParams.set('q', searchValue);
   if (window.history.replaceState) {
     const url = new URL(window.location.href);

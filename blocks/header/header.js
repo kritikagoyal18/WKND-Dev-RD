@@ -265,8 +265,8 @@ function createSearchBox() {
 function closeSearchBox() {
   const navWrapper = document.querySelector('.nav-wrapper');
   const headerWrapper = document.querySelector('.header-wrapper');
-  const searchContainer = headerWrapper.querySelector('.search-container');
-  const cancelContainer = navWrapper.querySelector('.cancel-container');
+  const searchContainer = headerWrapper ? headerWrapper.querySelector('.search-container') : null;
+  const cancelContainer = navWrapper ? navWrapper.querySelector('.cancel-container') : null;
   const overlay = document.querySelector('.overlay');
   //const searchImage = document.querySelector('.-light');
   const searchImage = document.querySelector('.icon-search-light');
@@ -276,8 +276,12 @@ function closeSearchBox() {
   if(cancelContainer){
     cancelContainer.style.display = 'none';
   }
-  searchImage.style.display = 'flex';
-  overlay.style.display = 'none';
+  if (searchImage) {
+    searchImage.style.display = 'flex';
+  }
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
   document.body.classList.remove('no-scroll');
 }
 
@@ -286,11 +290,11 @@ const closeSearchOnFocusOut = (e, navTools) => {
   const searchContainer = headerWrapper.querySelector('.search-container');
 
   if (searchContainer && searchContainer.style.display !== 'none') {
-    const cancelContainer = navTools.querySelector('.cancel-container');
-    const searchImage = navTools.querySelector('.icon-search-light');
-    const isClickInside = searchContainer.contains(e.target)
-      || cancelContainer.contains(e.target)
-      || searchImage.contains(e.target);
+    const cancelContainer = navTools ? navTools.querySelector('.cancel-container') : null;
+    const searchImage = navTools ? navTools.querySelector('.icon-search-light') : null;
+    const isClickInside = (searchContainer && searchContainer.contains && searchContainer.contains(e.target))
+      || (cancelContainer && cancelContainer.contains && cancelContainer.contains(e.target))
+      || (searchImage && searchImage.contains && searchImage.contains(e.target));
     if (!isClickInside) {
       closeSearchBox();
     }
@@ -525,6 +529,8 @@ export default async function decorate(block) {
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
+        const headerWrapper = document.querySelector('.header-wrapper');
+        const searchContainer = headerWrapper ? headerWrapper.querySelector('.search-container') : null;
         if (searchContainer && searchContainer.style.display !== 'none' && searchContainer.contains(e.target)) {
           closeSearchBox();
         }
