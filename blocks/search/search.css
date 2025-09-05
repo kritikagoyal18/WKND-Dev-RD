@@ -125,7 +125,7 @@
   padding: 12px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
   display: block; /* list view inside dropdown */
-  margin-top: 0;
+  margin-top: 16px;
 }
 
 /* optional cancel button appearance for webkit */
@@ -286,7 +286,7 @@ html[dir="rtl"] .search .search-box input[type="search"]::-webkit-search-cancel-
 /* no results */
 .search ul.search-results.no-results {
   display: block;
-  margin-left: 34px;
+  margin-top: 16px;
 }
 
 .search ul.search-results.no-results > li {

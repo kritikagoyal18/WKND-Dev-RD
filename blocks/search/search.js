@@ -6,6 +6,19 @@ import { fetchPlaceholders } from '../../scripts/placeholders.js';
 
 const searchParams = new URLSearchParams(window.location.search);
 
+// --- Utilities ---
+function debounce(fn, delay = 200) {
+  let timerId;
+  return (...args) => {
+    clearTimeout(timerId);
+    timerId = setTimeout(() => fn(...args), delay);
+  };
+}
+
+function safeText(value) {
+  return typeof value === 'string' ? value : '';
+}
+
 function findNextHeading(el) {
   let preceedingEl = el.parentElement.previousElement || el.parentElement.parentElement;
   let h = 'H2';
@@ -19,6 +32,8 @@ function findNextHeading(el) {
       preceedingEl = preceedingEl.previousElement || preceedingEl.parentElement;
     }
   }
+  // Default down to H4 to avoid very large headings inside result cards
+  if (h === 'H2') return 'H4';
   return h;
 }
 
@@ -87,21 +102,21 @@ function getSnippet(result, searchTerms) {
 }
 
 export async function fetchData(source) {
-  const response = await fetch(source);
-  if (!response.ok) {
+  try {
+    const response = await fetch(source, { credentials: 'same-origin' });
+    if (!response.ok) {
+      // eslint-disable-next-line no-console
+      console.error('[search] error loading index:', response.status, response.statusText);
+      return [];
+    }
+    const json = await response.json();
+    if (!json || !Array.isArray(json.data)) return [];
+    return json.data;
+  } catch (e) {
     // eslint-disable-next-line no-console
-    console.error('error loading API response', response);
-    return null;
+    console.error('[search] fetchData failed', e);
+    return [];
   }
-
-  const json = await response.json();
-  if (!json) {
-    // eslint-disable-next-line no-console
-    console.error('empty API response', source);
-    return null;
-  }
-
-  return json.data;
 }
 
 function renderResult(result, searchTerms, titleTag) {
@@ -190,11 +205,11 @@ function filterData(searchTerms, data) {
   const foundInHeader = [];
   const foundInMeta = [];
 
-  data.forEach((result) => {
+  (Array.isArray(data) ? data : []).forEach((result) => {
     let minIdx = -1;
 
     searchTerms.forEach((term) => {
-      const idx = (result.header || result.title).toLowerCase().indexOf(term);
+      const idx = safeText(result.header || result.title).toLowerCase().indexOf(term);
       if (idx < 0) return;
       if (minIdx < idx) minIdx = idx;
     });
@@ -204,7 +219,7 @@ function filterData(searchTerms, data) {
       return;
     }
 
-    const metaContents = `${result.title || ''} ${result.description || ''} ${result.body || ''} ${result.path?.split('/').pop() || ''}`.toLowerCase();
+    const metaContents = `${safeText(result.title)} ${safeText(result.description)} ${safeText(result.body)} ${safeText(result.path)?.split('/').pop() || ''}`.toLowerCase();
     searchTerms.forEach((term) => {
       const idx = metaContents.indexOf(term);
       if (idx < 0) return;
@@ -222,8 +237,8 @@ function filterData(searchTerms, data) {
   ].map((item) => item.result);
 }
 
-async function handleSearch(e, block, config) {
-  const searchValue = e.target.value;
+async function handleSearchImpl(e, block, config) {
+  const searchValue = e.target.value || '';
   searchParams.set('q', searchValue);
   if (window.history.replaceState) {
     const url = new URL(window.location.href);
@@ -241,6 +256,8 @@ async function handleSearch(e, block, config) {
   const filteredData = filterData(searchTerms, data);
   await renderResults(block, config, filteredData, searchTerms);
 }
+
+const handleSearch = debounce(handleSearchImpl, 150);
 
 function searchResultsContainer(block) {
   const results = document.createElement('ul');
@@ -293,8 +310,10 @@ function searchBox(block, config) {
 
 export default async function decorate(block) {
   const placeholders = await fetchPlaceholders();
-  const anchor = block.querySelector('a[href]');
-  let source = anchor?.href;
+  // Determine source path from the first config row anchor, or existing anchor in block, or locale default
+  const configAnchor = block.querySelector(':scope > div:nth-child(1) a[href]');
+  const inlineAnchor = block.querySelector('a[href]');
+  let source = configAnchor?.href || inlineAnchor?.href;
   if (!source) {
     const htmlLang = (document.documentElement.getAttribute('lang') || '').trim();
     const langMatch = htmlLang.match(/^[a-z]{2}(?:-[A-Z]{2})?$/);
@@ -319,7 +338,7 @@ export default async function decorate(block) {
   const useBarVariant = block.classList.contains('search-bar') || !useIconVariant;
 
   if (useIconVariant) {
-    block.classList.add('search-icon');
+    if (!block.classList.contains('search-icon')) block.classList.add('search-icon');
     // icon variant: trigger opens overlay hosting search UI
     const trigger = document.createElement('button');
     trigger.type = 'button';
