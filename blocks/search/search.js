@@ -130,12 +130,13 @@ function renderResult(result, searchTerms, titleTag) {
     wrapper.append(pic);
     a.append(wrapper);
   }
-  if (result.title) {
+  const displayTitle = result.navTitle || result.title;
+  if (displayTitle) {
     const title = document.createElement(titleTag);
     title.className = 'search-result-title';
     const link = document.createElement('a');
     link.href = result.path;
-    link.textContent = result.title;
+    link.textContent = displayTitle;
     highlightTextElements(searchTerms, [link]);
     title.append(link);
     a.append(title);
@@ -215,7 +216,7 @@ function filterData(searchTerms, data) {
     let minIdx = -1;
 
     searchTerms.forEach((term) => {
-      const idx = safeText(result.header || result.title).toLowerCase().indexOf(term);
+      const idx = safeText(result.header || result.navTitle).toLowerCase().indexOf(term);
       if (idx < 0) return;
       if (minIdx < idx) minIdx = idx;
     });
@@ -225,7 +226,7 @@ function filterData(searchTerms, data) {
       return;
     }
 
-    const metaContents = `${safeText(result.title)} ${safeText(result.description)} ${safeText(result.body)} ${safeText(result.path)?.split('/').pop() || ''}`.toLowerCase();
+    const metaContents = `${safeText(result.navTitle || result.title)} ${safeText(result.description)} ${safeText(result.body)} ${safeText(result.path)?.split('/').pop() || ''}`.toLowerCase();
     searchTerms.forEach((term) => {
       const idx = metaContents.indexOf(term);
       if (idx < 0) return;
