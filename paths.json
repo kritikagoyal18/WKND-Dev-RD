@@ -1,8 +1,7 @@
 {
   "mappings": [
     "/content/wknd-universal/language-masters/en:/",
-    "/content/wknd-universal/language-masters/en/:/",
-    "/content/wknd-universal/language-masters/en/:/en/",
+    "/content/wknd-universal/language-masters/:/",
     "/content/wknd-universal/configuration:/.helix/config.json",
     "/content/wknd-universal/metadata:/metadata.json",
     "/content/wknd-universal/redirects:/redirects.json",
