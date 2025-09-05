@@ -9,10 +9,12 @@
     "id": "section",
     "components": [
       "button",
+      "action-button",
       "cards",
       "carousel",
       "columns",
       "contentfragment",
+      "button",
       "dm-asset",
       "dm-template",
       "fragment",
@@ -23,6 +25,7 @@
       "title",
       "video",
       "separator",
+      "search",
       "form",
       "embed-adaptive-form"
     ]

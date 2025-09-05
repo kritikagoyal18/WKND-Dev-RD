@@ -31,7 +31,7 @@
   background-position: center;
   margin: 0;
   padding: 60px;
-  color: #fff;
+  color: var(--text-light);
   border-radius: inherit;
   text-align: center;
   display: flex;
@@ -59,7 +59,7 @@
   font-family: var(--black-font-family);
 }
 .content-fragment-wrapper .content-fragment .banner-content .banner-detail .cftitle::after {
-  background-color: var(--light-color);
+  background-color: var(--main-accent-color);
   content: "";
   display: block;
   height: 5px;
@@ -143,7 +143,7 @@
   align-items: flex-start;
   text-align: left;
   padding: 60px;
-  background: #f5f5f5;
+  background: var(--light-color);
   position: relative;
   z-index: 2;
   margin-left: 50%;
@@ -182,7 +182,7 @@
   align-items: flex-start;
   text-align: left;
   padding: 60px;
-  background: #f5f5f5;
+  background: var(--light-color);
   position: relative;
   z-index: 2;
   margin-right: 50%;
@@ -208,7 +208,7 @@
   align-items: center;
   text-align: center;
   padding: 60px;
-  background: #f5f5f5;
+  background: var(--light-color);
   position: relative;
   z-index: 2;
   margin-top: 50%;
@@ -234,7 +234,7 @@
   align-items: center;
   text-align: center;
   padding: 60px;
-  background: #f5f5f5;
+  background: var(--light-color);
   position: relative;
   z-index: 2;
   margin-bottom: 50%;
@@ -245,7 +245,7 @@
 .content-fragment-wrapper .content-fragment .banner-content.image-right .banner-detail .cftitle,
 .content-fragment-wrapper .content-fragment .banner-content.image-top .banner-detail .cftitle,
 .content-fragment-wrapper .content-fragment .banner-content.image-bottom .banner-detail .cftitle {
-  color: #333;
+  color: var(--text-color);
 }
 
 .content-fragment-wrapper .content-fragment .banner-content.image-left .banner-detail .cfsubtitle,
@@ -259,25 +259,25 @@
 .content-fragment-wrapper .content-fragment .banner-content.image-right .banner-detail .cfdescription,
 .content-fragment-wrapper .content-fragment .banner-content.image-top .banner-detail .cfdescription,
 .content-fragment-wrapper .content-fragment .banner-content.image-bottom .banner-detail .cfdescription {
-  color: #333;
+  color: var(--text-color);
   width: 100%;
-  text-align: left;
+  /* text-align: left; */
 }
 
 .content-fragment-wrapper .content-fragment .banner-content.image-left .banner-detail a,
 .content-fragment-wrapper .content-fragment .banner-content.image-right .banner-detail a,
 .content-fragment-wrapper .content-fragment .banner-content.image-top .banner-detail a,
 .content-fragment-wrapper .content-fragment .banner-content.image-bottom .banner-detail a {
-  text-align: left;
-  align-self: flex-start;
-  color: #333;
+  /* text-align: left; */ 
+  /* align-self: flex-start; */
+  color: var(--text-color);
 }
 
 .content-fragment-wrapper .content-fragment .banner-content.image-left .banner-detail a::after,
 .content-fragment-wrapper .content-fragment .banner-content.image-right .banner-detail a::after,
 .content-fragment-wrapper .content-fragment .banner-content.image-top .banner-detail a::after,
 .content-fragment-wrapper .content-fragment .banner-content.image-bottom .banner-detail a::after {
-  color: #333;
+  color: var(--text-color);
 }
 
 /* Override text alignment for top/bottom layouts */
@@ -419,4 +419,48 @@
   .content-fragment-wrapper .content-fragment .banner-content.image-bottom .banner-detail {
     margin-bottom: 200px !important;
   }
+}
+
+/* Alignment Styles */
+.content-fragment-wrapper .content-fragment .banner-content .banner-detail.text-left {
+  text-align: left;
+  align-items: flex-start;
+}
+
+.content-fragment-wrapper .content-fragment .banner-content .banner-detail.text-right {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.content-fragment-wrapper .content-fragment .banner-content .banner-detail.text-center {
+  text-align: center;
+  align-items: center;
+}
+/*for top and bottom layouts*/
+/* Override text alignment for top/bottom layouts */
+.content-fragment-wrapper .content-fragment .banner-content.image-top .banner-detail.text-left .cfdescription,
+.content-fragment-wrapper .content-fragment .banner-content.image-bottom .banner-detail.text-left .cfdescription {
+  text-align: left;
+}
+
+.content-fragment-wrapper .content-fragment .banner-content.image-top .banner-detail.text-left a,
+.content-fragment-wrapper .content-fragment .banner-content.image-bottom .banner-detail.text-left a {
+  text-align: left;
+  align-self: flex-start;
+}
+.content-fragment-wrapper .content-fragment .banner-content.image-top .banner-detail.text-right .cfdescription,
+.content-fragment-wrapper .content-fragment .banner-content.image-bottom .banner-detail.text-right .cfdescription {
+  text-align: right;
+}
+
+.content-fragment-wrapper .content-fragment .banner-content.image-top .banner-detail.text-right a,
+.content-fragment-wrapper .content-fragment .banner-content.image-bottom .banner-detail.text-right a {
+  text-align: right;
+  align-self: flex-end;
+}
+.content-fragment-wrapper .content-fragment .banner-content .banner-detail.text-left .cftitle::after {
+  margin-left: 0;
+}
+.content-fragment-wrapper .content-fragment .banner-content .banner-detail.text-right .cftitle::after {
+  margin-right: 0;
 }

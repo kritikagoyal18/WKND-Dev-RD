@@ -5,7 +5,6 @@ import { isAuthorEnvironment, moveInstrumentation } from '../../scripts/scripts.
  * @param {HTMLElement} $block
  */
 export default async function decorate(block) {
-  console.log(block);
 
   let inputs = block.querySelectorAll('.dynamicmedia-template > div');
   
@@ -76,8 +75,6 @@ export default async function decorate(block) {
     let finalUrl = templateURL.includes('?') 
       ? `${templateURL}&${queryString}` 
       : `${templateURL}?${queryString}`;
-
-    console.log("Final URL:", finalUrl);
 
     if (finalUrl) {
       const finalImg = document.createElement('img');

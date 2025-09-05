@@ -358,8 +358,7 @@
           {
             "name": "Light Color",
             "value": "bg-light"
-          }
-          
+          }         
         ]
       },
       {
@@ -477,6 +476,58 @@
     ]
   },
   {
+    "id": "action-button",
+    "fields": [
+      {
+        "component": "aem-content",
+        "valueType": "string",
+        "name": "link",
+        "label": "Link",
+        "multi": false,
+        "validation": {
+            "rootPath": "/content"
+        }
+      },
+      {
+        "component": "text",
+        "name": "label",
+        "value": "Button",
+        "label": "Label",
+        "valueType": "string"
+      },
+      {
+        "component": "text",
+        "name": "title",
+        "value": "Button",
+        "label": "Title",
+        "valueType": "string"
+      },
+      {
+        "component": "select",
+        "name": "style",
+        "label": "Style",
+        "options": [
+          {
+            "name": "Default",
+            "value": "default-button"
+          },
+          {
+            "name": "Link",
+            "value": "default-button-link"
+          },
+          {
+            "name": "Secondary Button",
+            "value": "default-button-secondary"
+          },
+          {
+            "name": "Dark Button",
+            "value": "default-button-dark"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "contentfragment",
     "fields": [
       {
@@ -521,6 +572,25 @@
           {
             "name": "Image Bottom",
             "value": "image-bottom"
+          }
+        ]
+      },
+      {
+        "component": "select",
+        "name": "alignment",
+        "label": "Alignment",
+        "options": [
+          {
+            "name": "Text Left",
+            "value": "text-left"
+          },
+          {
+            "name": "Text Right",
+            "value": "text-right"
+          },
+          {
+            "name": "Text Center",
+            "value": "text-center"
           }
         ]
       }
@@ -582,6 +652,14 @@
           {
             "name": "Image Bottom",
             "value": "image-bottom"
+          },
+          {
+            "name": "Image-Background Text-Left",
+            "value": "image-background-text-left"
+          },
+          {
+            "name": "Image-Background Text-Right",
+            "value": "image-background-text-right"
           }
         ]
       },
@@ -605,6 +683,25 @@
           {
             "name": "Link",
             "value": "link"
+          }
+        ]
+      },
+      {
+        "component": "select",
+        "name": "backgroundstyle",
+        "label": "Background Style",
+        "options": [
+          {
+            "name": "Default",
+            "value": "default"
+          },
+          {
+            "name": "Theme Dark",
+            "value": "theme-dark"
+          },
+          {
+            "name": "Theme Light",
+            "value": "theme-light"
           }
         ]
       }
@@ -770,6 +867,21 @@
           "component": "aem-content",
           "name": "searchPath",
           "label": "Search Path"
+        },
+        {
+          "component": "select",
+          "name": "searchstyle",
+          "label": "Search Style",
+          "options": [
+            {
+              "name": "Search Bar",
+              "value": "search-bar"
+            },
+            {
+              "name": "Search Icon",
+              "value": "search-icon"
+            }
+          ]
         }
       ]
   },

@@ -150,6 +150,11 @@ async function toggleMenu(nav, navSections, forceExpanded = null) {
 
 function settingAltTextForSearchIcon() {
   const searchImage = document.querySelector('.icon-search-light');
+  if (!searchImage) {
+    // eslint-disable-next-line no-console
+    console.debug('header: .icon-search-light not found; skipping search icon init');
+    return;
+  }
   searchImage.style.cursor = 'pointer';
   searchImage.addEventListener('click', () => {
     createSearchBox();
@@ -260,8 +265,8 @@ function createSearchBox() {
 function closeSearchBox() {
   const navWrapper = document.querySelector('.nav-wrapper');
   const headerWrapper = document.querySelector('.header-wrapper');
-  const searchContainer = headerWrapper.querySelector('.search-container');
-  const cancelContainer = navWrapper.querySelector('.cancel-container');
+  const searchContainer = headerWrapper ? headerWrapper.querySelector('.search-container') : null;
+  const cancelContainer = navWrapper ? navWrapper.querySelector('.cancel-container') : null;
   const overlay = document.querySelector('.overlay');
   //const searchImage = document.querySelector('.-light');
   const searchImage = document.querySelector('.icon-search-light');
@@ -271,8 +276,12 @@ function closeSearchBox() {
   if(cancelContainer){
     cancelContainer.style.display = 'none';
   }
-  searchImage.style.display = 'flex';
-  overlay.style.display = 'none';
+  if (searchImage) {
+    searchImage.style.display = 'flex';
+  }
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
   document.body.classList.remove('no-scroll');
 }
 
@@ -281,11 +290,11 @@ const closeSearchOnFocusOut = (e, navTools) => {
   const searchContainer = headerWrapper.querySelector('.search-container');
 
   if (searchContainer && searchContainer.style.display !== 'none') {
-    const cancelContainer = navTools.querySelector('.cancel-container');
-    const searchImage = navTools.querySelector('.icon-search-light');
-    const isClickInside = searchContainer.contains(e.target)
-      || cancelContainer.contains(e.target)
-      || searchImage.contains(e.target);
+    const cancelContainer = navTools ? navTools.querySelector('.cancel-container') : null;
+    const searchImage = navTools ? navTools.querySelector('.icon-search-light') : null;
+    const isClickInside = (searchContainer && searchContainer.contains && searchContainer.contains(e.target))
+      || (cancelContainer && cancelContainer.contains && cancelContainer.contains(e.target))
+      || (searchImage && searchImage.contains && searchImage.contains(e.target));
     if (!isClickInside) {
       closeSearchBox();
     }
@@ -447,33 +456,24 @@ async function applyCFTheme(themeCFReference) {
   }
 }
 
-
 /**
  * loads and decorates the header, mainly the nav
  * @param {Element} block The header block element
  */
 export default async function decorate(block) {
-  // load nav as fragment
   //const locale = getMetadata('nav');
-
   const themeCFReference = getMetadata('theme_cf_reference');
   applyCFTheme(themeCFReference);
   
-
-  
   const navMeta = getMetadata('nav');
   const langCode = getLanguage();
-  console.log("langCode :"+langCode);
-
-   const isAuthor = isAuthorEnvironment();
-    let navPath =`/${langCode}/nav`;
+  const isAuthor = isAuthorEnvironment();
+  let navPath =`/${langCode}/nav`;
   
-    if(isAuthor){
-      navPath = navMeta ? new URL(navMeta, window.location).pathname : `/content/${siteName}${PATH_PREFIX}/${langCode}/nav`;
-    }
+  if(isAuthor){
+    navPath = navMeta ? new URL(navMeta, window.location).pathname : `/content/${siteName}${PATH_PREFIX}/${langCode}/nav`;
+  }
    
-
-  
   //const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/nav';
 
   const pathSegments = window.location.pathname.split('/').filter(Boolean);
@@ -528,6 +528,8 @@ export default async function decorate(block) {
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
+        const headerWrapper = document.querySelector('.header-wrapper');
+        const searchContainer = headerWrapper ? headerWrapper.querySelector('.search-container') : null;
         if (searchContainer && searchContainer.style.display !== 'none' && searchContainer.contains(e.target)) {
           closeSearchBox();
         }

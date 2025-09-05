@@ -15,6 +15,9 @@ indices:
       description:
         select: head > meta[name="description"]
         value: attribute(el, "content")
+      body:
+        select: main
+        value: textContent(el)
       image:
         select: head > meta[property="og:image"]
         value: match(attribute(el, "content"), "^(https?:\/\/.*?(wknd.com))+(.*)|^(.*)")

@@ -288,6 +288,11 @@
     --button-vertical-padding-secondary: 12px;
     --button-horizontal-padding-secondary: 32px;
   }
+
+  /* main .section.bg-image .sec-img {
+    top: 0;
+    object-fit: cover;
+  } */
 }
 
 body {
@@ -733,9 +738,6 @@ main > .section[data-sec-full-width="true"] > div {
 
 
 /* Section Background Colors */
-main .section.bg-default {
-  background-color: var(--background-color);
-}
 main .section.bg-theme {  
   background-color: var(--main-accent-color);
   color: var(--text-color);
@@ -749,8 +751,31 @@ main .section.bg-light {
   color: var(--text-color);
 }
 
-
-
+/* Section background image */
+/* main .section.bg-image {
+  overflow: hidden;
+  position: relative;  
+}
+main .section.bg-image picture {
+  display: block;
+  width: 100%;
+}
+main .section.bg-image .sec-img {
+  width: 100%;
+  height: auto;           
+  object-fit: contain;    
+  position: static;       
+  top: auto;
+  left: auto;
+  z-index: auto;
+}
+  
+main .section.bg-image > .default-content-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+} */
 
 /* Responsive styles- start */
 @media (max-width: 1024px) {
@@ -775,7 +800,6 @@ main .section.bg-light {
     --spacing-large: 2rem;
     --spacing-xlarge: 2.5rem;
   }
-
   main .section {
     padding: 0;
   }
@@ -924,7 +948,7 @@ table {
 }
 
 .cta-button-secondary a.button:hover::after {
-  color: var(--text-dark) !important;
+  color: var(--dark-color) !important;
   transform: translateX(2px);
 }
 
