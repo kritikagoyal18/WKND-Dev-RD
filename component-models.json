@@ -870,16 +870,16 @@
         },
         {
           "component": "select",
-          "name": "style",
-          "label": "Style",
+          "name": "searchstyle",
+          "label": "Search Style",
           "options": [
             {
               "name": "Search Bar",
               "value": "search-bar"
             },
             {
-              "name": "Icon",
-              "value": "icon"
+              "name": "Search Icon",
+              "value": "search-icon"
             }
           ]
         }
