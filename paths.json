@@ -1,6 +1,7 @@
 {
   "mappings": [
-    "/content/wknd-dev-test/language-masters/:/",
+    "/content/wknd-dev-test/language-masters/en:/",
+    "/content/wknd-dev-test/language-masters/en/:/en/",
     "/content/wknd-dev-test/configuration:/.helix/config.json",
     "/content/wknd-dev-test/metadata:/metadata.json",
     "/content/wknd-dev-test/redirects:/redirects.json",

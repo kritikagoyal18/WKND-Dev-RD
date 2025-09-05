@@ -458,7 +458,6 @@ async function applyCFTheme(themeCFReference) {
  */
 export default async function decorate(block) {
   //const locale = getMetadata('nav');
-  console.log('[header] current time', new Date().toISOString());
   const themeCFReference = getMetadata('theme_cf_reference');
   applyCFTheme(themeCFReference);
   
