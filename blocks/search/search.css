@@ -1,28 +1,10 @@
-.search.header-search {
-  padding-top: 0;
-}
-
-.search.header-search .search-box {
-  max-width: 420px;
-}
-
-.search.header-search .search-box input {
-  --search-input-height: 36px;
-}
-
-.search.header-search .search-dropdown {
-  position: fixed; /* actual position set from JS to follow the input */
-}
-
-/* header trigger + overlay */
-.search.header-search .search-trigger {
+.search.search-icon .search-trigger {
   border: none;
   background: transparent;
   padding: 4px;
   cursor: pointer;
 }
-
-.search.header-search .search-overlay {
+.search.search-icon .search-overlay {
   position: fixed;
   inset: 0;
   display: none;
@@ -33,10 +15,9 @@
   z-index: 10000;
   padding: 10vh 16px 16px;
 }
+.search.search-icon .search-overlay.open { display: flex; }
 
-.search.header-search .search-overlay.open { display: flex; }
-
-.search.header-search .search-overlay-panel {
+.search.search-icon .search-overlay-panel {
   width: min(960px, 100%);
   background: var(--background-color);
   border: 1px solid #dadada;
@@ -44,13 +25,11 @@
   box-shadow: 0 20px 40px rgba(0,0,0,0.2);
   padding: 16px;
 }
-
-.search.header-search .search-overlay-panel .search-box {
+.search.search-icon .search-overlay-panel .search-box {
   max-width: unset;
   margin: 0 0 12px 0;
 }
-
-.search.header-search .search-overlay-panel .search-dropdown {
+.search.search-icon .search-overlay-panel .search-dropdown {
   position: static;
 }
 /* search box */
@@ -108,13 +87,13 @@
 }
 
 /* header: make search icon white */
-.search.header-search .search-box .icon img,
-.search.header-search .search-trigger .icon img {
+.search.search-icon .search-box .icon img,
+.search.search-icon .search-trigger .icon img {
   filter: brightness(0) invert(1);
 }
 
 /* reset icon color inside overlay panel */
-.search.header-search .search-overlay .icon img {
+.search.search-icon .search-overlay .icon img {
   filter: none;
 }
 

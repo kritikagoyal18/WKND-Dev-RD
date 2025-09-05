@@ -1,29 +1,10 @@
 import {
   createOptimizedPicture,
-  decorateIcons,
+  decorateIcons
 } from '../../scripts/aem.js';
 import { fetchPlaceholders } from '../../scripts/placeholders.js';
 
 const searchParams = new URLSearchParams(window.location.search);
-
-function isHeaderVariant(block) {
-  return !!block.closest('header');
-}
-
-function positionDropdown(block) {
-  if (!block.classList.contains('header-search')) return;
-  // if we're using the full overlay, do not reposition dropdown
-  if (block.querySelector('.search-overlay')) return;
-  const input = block.querySelector('input.search-input');
-  const dropdown = block.querySelector('.search-dropdown');
-  if (!input || !dropdown) return;
-  const r = input.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.left = `${Math.round(r.left)}px`;
-  dropdown.style.top = `${Math.round(r.bottom + 8)}px`;
-  dropdown.style.width = `${Math.round(r.width)}px`;
-  dropdown.style.zIndex = '10000';
-}
 
 function findNextHeading(el) {
   let preceedingEl = el.parentElement.previousElement || el.parentElement.parentElement;
@@ -162,19 +143,13 @@ async function renderResults(block, config, filteredData, searchTerms) {
       const li = renderResult(result, searchTerms, headingTag);
       searchResults.append(li);
     });
-    if (dropdown) {
-      dropdown.classList.add('open');
-      positionDropdown(block);
-    }
+    if (dropdown) dropdown.classList.add('open');
   } else {
     const noResultsMessage = document.createElement('li');
     searchResults.classList.add('no-results');
     noResultsMessage.textContent = config.placeholders.searchNoResults || 'No results found.';
     searchResults.append(noResultsMessage);
-    if (dropdown) {
-      dropdown.classList.add('open');
-      positionDropdown(block);
-    }
+    if (dropdown) dropdown.classList.add('open');
   }
 }
 
@@ -297,12 +272,26 @@ export default async function decorate(block) {
     const locale = langMatch ? htmlLang.split('-')[0] : '';
     source = `${locale ? `/${locale}` : ''}/query-index.json`;
   }
-  block.innerHTML = '';
-  console.log('[search] current time', new Date().toISOString());
-  const inHeader = isHeaderVariant(block);
-  if (inHeader) {
-    block.classList.add('header-search');
-    // header: render only a trigger; build overlay hosting the search UI
+
+  // Read style from second row and hide first two rows (config rows)
+  try {
+    const styleText = block.querySelector(':scope > div:nth-child(2) > div p')?.textContent?.trim();
+    if (styleText) block.classList.add(styleText);
+    const row1 = block.querySelector(':scope > div:nth-child(1)');
+    const row2 = block.querySelector(':scope > div:nth-child(2)');
+    [row1, row2].forEach((r) => { if (r) r.style.display = 'none'; });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.log('[search] style/hide rows error', e);
+  }
+
+  // Variant selection via block classes
+  const useIconVariant = block.classList.contains('search-icon');
+  const useBarVariant = block.classList.contains('search-bar') || !useIconVariant;
+
+  if (useIconVariant) {
+    block.classList.add('search-icon');
+    // icon variant: trigger opens overlay hosting search UI
     const trigger = document.createElement('button');
     trigger.type = 'button';
     trigger.className = 'search-trigger';
@@ -333,7 +322,7 @@ export default async function decorate(block) {
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closeOverlay(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay(); });
   } else {
-    // page: inline search box with dropdown beneath input
+    // bar variant: inline search box with dropdown beneath input
     block.append(
       searchBox(block, { source, placeholders }),
     );
@@ -355,13 +344,5 @@ export default async function decorate(block) {
     }
   });
 
-  // keep dropdown aligned in header variant
-  window.addEventListener('resize', () => {
-    const dropdown = block.querySelector('.search-dropdown');
-    if (dropdown && dropdown.classList.contains('open')) positionDropdown(block);
-  });
-  window.addEventListener('scroll', () => {
-    const dropdown = block.querySelector('.search-dropdown');
-    if (dropdown && dropdown.classList.contains('open')) positionDropdown(block);
-  }, { passive: true });
+  // no special positioning logic needed; dropdown is positioned within box
 }
