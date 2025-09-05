@@ -161,6 +161,12 @@ function clearSearch(block) {
   const dropdown = block.querySelector('.search-dropdown');
   if (dropdown) dropdown.classList.remove('open');
   if (dropdown && dropdown.parentElement) dropdown.parentElement.classList.remove('open');
+  // collapse expanded mode if present
+  if (block.classList.contains('expanded')) {
+    block.classList.remove('expanded');
+    const expanded = block.querySelector('.search-expanded');
+    if (expanded) expanded.remove();
+  }
   if (window.history.replaceState) {
     const url = new URL(window.location.href);
     url.search = '';
@@ -308,6 +314,160 @@ function searchBox(block, config) {
   return box;
 }
 
+// --- Expanded (inline) results mode for search-bar variant ---
+function buildExpandedLayout(block) {
+  let expanded = block.querySelector('.search-expanded');
+  if (expanded) return {
+    expanded,
+    filters: expanded.querySelector('.search-filters'),
+    results: expanded.querySelector('.search-expanded-results'),
+  };
+
+  expanded = document.createElement('div');
+  expanded.className = 'search-expanded';
+
+  const filters = document.createElement('aside');
+  filters.className = 'search-filters';
+
+  const resultsWrap = document.createElement('div');
+  resultsWrap.className = 'search-expanded-results';
+  const results = document.createElement('ul');
+  results.className = 'search-results';
+  results.dataset.h = findNextHeading(block);
+  resultsWrap.append(results);
+
+  expanded.append(filters, resultsWrap);
+  block.append(expanded);
+  return { expanded, filters, results };
+}
+
+function normalizeTimestamp(value) {
+  if (!value && value !== 0) return NaN;
+  if (typeof value === 'number') {
+    // if seconds, convert to ms
+    return value < 1e12 ? value * 1000 : value;
+  }
+  const ms = Date.parse(value);
+  if (!Number.isNaN(ms)) return ms;
+  const asNum = Number(value);
+  if (!Number.isNaN(asNum)) return normalizeTimestamp(asNum);
+  return NaN;
+}
+
+function getResultTimestamp(result) {
+  const primary = normalizeTimestamp(result.publishDate);
+  const fallback = normalizeTimestamp(result.lastModified);
+  if (!Number.isNaN(primary)) return primary;
+  if (!Number.isNaN(fallback)) return fallback;
+  return NaN;
+}
+
+function applyDateFilter(data, dateRange) {
+  if (!dateRange || dateRange === 'any') return data;
+  const now = Date.now();
+  const ranges = { '24h': 24 * 60 * 60 * 1000, '7d': 7 * 24 * 60 * 60 * 1000, '30d': 30 * 24 * 60 * 60 * 1000 };
+  const windowMs = ranges[dateRange];
+  if (!windowMs) return data;
+  return data.filter((r) => {
+    const ts = getResultTimestamp(r);
+    if (Number.isNaN(ts)) return false;
+    return (now - ts) <= windowMs;
+  });
+}
+
+function renderDateFilters(container, selected, onChange) {
+  const group = document.createElement('div');
+  group.className = 'filter-group date-range';
+  const title = document.createElement('h4');
+  title.textContent = 'Published';
+  group.append(title);
+
+  const options = [
+    { key: 'any', label: 'Any time' },
+    { key: '24h', label: 'Last 24 hours' },
+    { key: '7d', label: 'Last week' },
+    { key: '30d', label: 'Last month' },
+  ];
+  const name = `date-range-${Math.random().toString(36).slice(2)}`;
+  options.forEach((opt, idx) => {
+    const id = `${name}-${idx}`;
+    const label = document.createElement('label');
+    const rb = document.createElement('input');
+    rb.type = 'radio';
+    rb.name = name;
+    rb.id = id;
+    rb.checked = (selected || 'any') === opt.key;
+    rb.addEventListener('change', () => onChange(opt.key));
+    label.append(rb, document.createTextNode(` ${opt.label}`));
+    group.append(label);
+  });
+  container.append(group);
+}
+
+function applyAllFilters(base, selectedDateRange) {
+  return applyDateFilter(base, selectedDateRange);
+}
+
+async function activateExpandedSearch(block, config, searchValue, cachedData) {
+  const value = (searchValue || '').trim();
+  if (value.length < 3) return;
+
+  // manage URL param
+  searchParams.set('q', value);
+  if (window.history.replaceState) {
+    const url = new URL(window.location.href);
+    url.search = searchParams.toString();
+    window.history.replaceState({}, '', url.toString());
+  }
+
+  // close dropdown if open
+  const dropdown = block.querySelector('.search-dropdown');
+  if (dropdown) dropdown.classList.remove('open');
+  if (dropdown && dropdown.parentElement) dropdown.parentElement.classList.remove('open');
+
+  block.classList.add('expanded');
+  const { filters, results } = buildExpandedLayout(block);
+
+  // fetch/cached data
+  let data = cachedData || block._searchData;
+  if (!data) {
+    data = await fetchData(config.source);
+    block._searchData = data;
+  }
+
+  const searchTerms = value.toLowerCase().split(/\s+/).filter((t) => !!t);
+  const base = filterData(searchTerms, data);
+
+  // state
+  let selectedDateRange = block._selectedDateRange || 'any';
+
+  const renderFilters = () => {
+    filters.innerHTML = '';
+    renderDateFilters(filters, selectedDateRange, (next) => {
+      selectedDateRange = next;
+      block._selectedDateRange = selectedDateRange;
+      renderList();
+    });
+  };
+
+  const renderList = () => {
+    const filtered = applyAllFilters(base, selectedDateRange);
+    results.innerHTML = '';
+    if (!filtered.length) {
+      const msg = document.createElement('li');
+      msg.textContent = config.placeholders.searchNoResults || 'No results found.';
+      results.classList.add('no-results');
+      results.append(msg);
+      return;
+    }
+    results.classList.remove('no-results');
+    filtered.forEach((r) => results.append(renderResult(r, searchTerms, results.dataset.h)));
+  };
+
+  renderFilters();
+  renderList();
+}
+
 export default async function decorate(block) {
   const placeholders = await fetchPlaceholders();
   // Determine source path from the first config row anchor, or existing anchor in block, or locale default
@@ -374,12 +534,25 @@ export default async function decorate(block) {
     block.append(
       searchBox(block, { source, placeholders }),
     );
+
+    // Enter activates expanded mode
+    const input = block.querySelector('input.search-input');
+    input.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        await activateExpandedSearch(block, { source, placeholders }, input.value);
+      }
+    });
   }
 
   if (searchParams.get('q')) {
     const input = block.querySelector('input');
     input.value = searchParams.get('q');
-    input.dispatchEvent(new Event('input'));
+    if (useBarVariant) {
+      await activateExpandedSearch(block, { source, placeholders }, input.value);
+    } else {
+      input.dispatchEvent(new Event('input'));
+    }
   }
 
   decorateIcons(block);
