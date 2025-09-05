@@ -6,6 +6,25 @@ import { fetchPlaceholders } from '../../scripts/placeholders.js';
 
 const searchParams = new URLSearchParams(window.location.search);
 
+function isHeaderVariant(block) {
+  return !!block.closest('header');
+}
+
+function positionDropdown(block) {
+  if (!block.classList.contains('header-search')) return;
+  // if we're using the full overlay, do not reposition dropdown
+  if (block.querySelector('.search-overlay')) return;
+  const input = block.querySelector('input.search-input');
+  const dropdown = block.querySelector('.search-dropdown');
+  if (!input || !dropdown) return;
+  const r = input.getBoundingClientRect();
+  dropdown.style.position = 'fixed';
+  dropdown.style.left = `${Math.round(r.left)}px`;
+  dropdown.style.top = `${Math.round(r.bottom + 8)}px`;
+  dropdown.style.width = `${Math.round(r.width)}px`;
+  dropdown.style.zIndex = '10000';
+}
+
 function findNextHeading(el) {
   let preceedingEl = el.parentElement.previousElement || el.parentElement.parentElement;
   let h = 'H2';
@@ -121,6 +140,8 @@ function clearSearchResults(block) {
 
 function clearSearch(block) {
   clearSearchResults(block);
+  const dropdown = block.querySelector('.search-dropdown');
+  if (dropdown) dropdown.classList.remove('open');
   if (window.history.replaceState) {
     const url = new URL(window.location.href);
     url.search = '';
@@ -133,6 +154,7 @@ async function renderResults(block, config, filteredData, searchTerms) {
   clearSearchResults(block);
   const searchResults = block.querySelector('.search-results');
   const headingTag = searchResults.dataset.h;
+  const dropdown = block.querySelector('.search-dropdown');
 
   if (filteredData.length) {
     searchResults.classList.remove('no-results');
@@ -140,11 +162,19 @@ async function renderResults(block, config, filteredData, searchTerms) {
       const li = renderResult(result, searchTerms, headingTag);
       searchResults.append(li);
     });
+    if (dropdown) {
+      dropdown.classList.add('open');
+      positionDropdown(block);
+    }
   } else {
     const noResultsMessage = document.createElement('li');
     searchResults.classList.add('no-results');
     noResultsMessage.textContent = config.placeholders.searchNoResults || 'No results found.';
     searchResults.append(noResultsMessage);
+    if (dropdown) {
+      dropdown.classList.add('open');
+      positionDropdown(block);
+    }
   }
 }
 
@@ -242,9 +272,16 @@ function searchIcon() {
 function searchBox(block, config) {
   const box = document.createElement('div');
   box.classList.add('search-box');
+  const input = searchInput(block, config);
+  const icon = searchIcon();
+  const dropdown = document.createElement('div');
+  dropdown.className = 'search-dropdown';
+  const results = searchResultsContainer(block);
+  dropdown.append(results);
   box.append(
-    searchInput(block, config),
-    searchIcon()
+    input,
+    icon,
+    dropdown,
   );
 
   return box;
@@ -261,10 +298,46 @@ export default async function decorate(block) {
     source = `${locale ? `/${locale}` : ''}/query-index.json`;
   }
   block.innerHTML = '';
-  block.append(
-    searchBox(block, { source, placeholders }),
-    searchResultsContainer(block),
-  );
+  console.log('[search] current time', new Date().toISOString());
+  const inHeader = isHeaderVariant(block);
+  if (inHeader) {
+    block.classList.add('header-search');
+    // header: render only a trigger; build overlay hosting the search UI
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'search-trigger';
+    trigger.setAttribute('aria-label', 'Open search');
+    const icon = searchIcon();
+    trigger.append(icon);
+    const overlay = document.createElement('div');
+    overlay.className = 'search-overlay';
+    const panel = document.createElement('div');
+    panel.className = 'search-overlay-panel';
+    panel.append(
+      searchBox(block, { source, placeholders }),
+    );
+    overlay.append(panel);
+    block.append(trigger, overlay);
+
+    const openOverlay = () => {
+      overlay.classList.add('open');
+      const input = overlay.querySelector('input.search-input');
+      if (input) input.focus();
+    };
+    const closeOverlay = () => {
+      overlay.classList.remove('open');
+      clearSearch(block);
+    };
+
+    trigger.addEventListener('click', openOverlay);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeOverlay(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay(); });
+  } else {
+    // page: inline search box with dropdown beneath input
+    block.append(
+      searchBox(block, { source, placeholders }),
+    );
+  }
 
   if (searchParams.get('q')) {
     const input = block.querySelector('input');
@@ -273,4 +346,22 @@ export default async function decorate(block) {
   }
 
   decorateIcons(block);
+
+  // close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!block.contains(e.target)) {
+      const dropdown = block.querySelector('.search-dropdown');
+      if (dropdown) dropdown.classList.remove('open');
+    }
+  });
+
+  // keep dropdown aligned in header variant
+  window.addEventListener('resize', () => {
+    const dropdown = block.querySelector('.search-dropdown');
+    if (dropdown && dropdown.classList.contains('open')) positionDropdown(block);
+  });
+  window.addEventListener('scroll', () => {
+    const dropdown = block.querySelector('.search-dropdown');
+    if (dropdown && dropdown.classList.contains('open')) positionDropdown(block);
+  }, { passive: true });
 }

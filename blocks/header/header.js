@@ -150,6 +150,11 @@ async function toggleMenu(nav, navSections, forceExpanded = null) {
 
 function settingAltTextForSearchIcon() {
   const searchImage = document.querySelector('.icon-search-light');
+  if (!searchImage) {
+    // eslint-disable-next-line no-console
+    console.debug('header: .icon-search-light not found; skipping search icon init');
+    return;
+  }
   searchImage.style.cursor = 'pointer';
   searchImage.addEventListener('click', () => {
     createSearchBox();
@@ -447,32 +452,26 @@ async function applyCFTheme(themeCFReference) {
   }
 }
 
-
 /**
  * loads and decorates the header, mainly the nav
  * @param {Element} block The header block element
  */
 export default async function decorate(block) {
-  // load nav as fragment
   //const locale = getMetadata('nav');
-
+  console.log('[header] current time', new Date().toISOString());
   const themeCFReference = getMetadata('theme_cf_reference');
   applyCFTheme(themeCFReference);
-  
-
   
   const navMeta = getMetadata('nav');
   const langCode = getLanguage();
 
-   const isAuthor = isAuthorEnvironment();
-    let navPath =`/${langCode}/nav`;
+  const isAuthor = isAuthorEnvironment();
+  let navPath =`/${langCode}/nav`;
   
-    if(isAuthor){
-      navPath = navMeta ? new URL(navMeta, window.location).pathname : `/content/${siteName}${PATH_PREFIX}/${langCode}/nav`;
-    }
+  if(isAuthor){
+    navPath = navMeta ? new URL(navMeta, window.location).pathname : `/content/${siteName}${PATH_PREFIX}/${langCode}/nav`;
+  }
    
-
-  
   //const navPath = navMeta ? new URL(navMeta, window.location).pathname : '/nav';
 
   const pathSegments = window.location.pathname.split('/').filter(Boolean);
