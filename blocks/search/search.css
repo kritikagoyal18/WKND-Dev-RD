@@ -111,6 +111,11 @@
   display: block;
 }
 
+/* hide the input's search icon when results are open */
+.search .search-box.open .icon.icon-search {
+  display: none;
+}
+
 .search .search-dropdown .search-results {
   background: var(--background-color);
   border: 1px solid #dadada;
