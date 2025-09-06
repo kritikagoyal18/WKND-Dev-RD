@@ -337,16 +337,22 @@ async function fetchingPlaceholdersData() {
 }
 
 
-async function addLogoLink() {
+async function addLogoLink(langCode) {
 
   //urn:aemconnection:/content/wknd-universal/language-masters/en/magazine/jcr:content
-  const aueResource = document.body.getAttribute('data-aue-resource')?.replace(/^.*?(\/content.*?\/en).*$/, '$1');
+  const currentLang = langCode || getLanguage();
+  const aueResource = document.body.getAttribute('data-aue-resource')
+    ?.replace(new RegExp(`^.*?(\\/content.*?\\/${currentLang}).*$`), '$1');
   
   let logoLink = '';
     if(aueResource !== null && aueResource !== undefined && aueResource !== ''){
       logoLink = aueResource+'.html';
     } else {
-      logoLink = window.location.origin;
+      if(langCode === 'en') {
+        logoLink = window.location.origin;
+      } else {
+        logoLink = window.location.origin + `/${langCode}`;
+      }
     }
 
     try {
@@ -556,5 +562,5 @@ export default async function decorate(block) {
   block.append(navWrapper);
   settingAltTextForSearchIcon();
   //fetchingPlaceholdersData();
-  addLogoLink();
+  addLogoLink(langCode);
 }
