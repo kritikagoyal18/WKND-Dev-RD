@@ -9,7 +9,7 @@
     "/content/wknd-universal.resource/language-masters/en/query-index.json:/en/query-index.json"
   ],
   "includes": [
-    "/content/wknd-universal/",
-    "/content/dam/wknd-universal/"
+    "/content/wknd-dev-test/",
+    "/content/dam/wknd-dev-test/"
   ]
 }

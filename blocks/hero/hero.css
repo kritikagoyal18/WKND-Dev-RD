@@ -30,7 +30,6 @@
   margin: 0 auto;
   color: var(--text-light);
   text-align: center;
-  text-shadow: 1px 1px #333;
   font-family: var(--black-font-family);
 }
 
@@ -186,6 +185,34 @@
   flex-direction: column-reverse;
 }
 
+/* Image Background Text Left - Text overlaid on background image, left-aligned */
+.hero.image-background-text-left {
+  justify-content: flex-start;
+  align-items: center;
+  text-align: left;
+  padding: 60px 40px;
+}
+
+.hero.image-background-text-left > div {
+  text-align: left;
+  max-width: 600px;
+  margin: 0;
+}
+
+/* Image Background Text Right - Text overlaid on background image, right-aligned */
+.hero.image-background-text-right {
+  justify-content: flex-end;
+  align-items: center;
+  text-align: left;
+  padding: 60px 40px;
+}
+
+.hero.image-background-text-right > div {
+  text-align: left;
+  max-width: 600px;
+  margin: 0;
+}
+
 .hero.image-left picture,
 .hero.image-right picture,
 .hero.image-top picture,
@@ -222,6 +249,11 @@
   padding: 40px;
   box-sizing: border-box;
 }
+
+.hero.image-right > div:nth-child(2) {
+  padding-left: 80px;
+}
+
 picture {
     line-height: 0;
 }
@@ -256,6 +288,45 @@ picture {
   color: var(--text-color);
   text-shadow: unset;
 }
+
+.hero.image-background-text-left h1,
+.hero.image-background-text-left h2,
+.hero.image-background-text-left h3,
+.hero.image-background-text-left h4,
+.hero.image-background-text-left h5,
+.hero.image-background-text-left h6,
+.hero.image-background-text-left p {
+  text-align: left;
+  margin: 0 0 20px 0;
+  width: 100%;
+  max-width: none;
+  color: var(--text-light);
+}
+
+.hero.image-background-text-left .button-container {
+  text-align: left;
+  margin-top: 30px;
+}
+
+.hero.image-background-text-right h1,
+.hero.image-background-text-right h2,
+.hero.image-background-text-right h3,
+.hero.image-background-text-right h4,
+.hero.image-background-text-right h5,
+.hero.image-background-text-right h6,
+.hero.image-background-text-right p {
+  text-align: left;
+  margin: 0 0 20px 0;
+  width: 100%;
+  max-width: none;
+  color: var(--text-light);
+}
+
+.hero.image-background-text-right .button-container {
+  text-align: left;
+  margin-top: 30px;
+}
+
 .hero.image-top h1,
 .hero.image-top h2,
 .hero.image-top h3,
@@ -285,6 +356,14 @@ picture {
 
 @media (width < 1024px) {
   .hero { min-height: 650px; }
+  
+  .hero.image-background-text-left {
+    padding: 50px 30px;
+  }
+  
+  .hero.image-background-text-right {
+    padding: 50px 30px;
+  }
 }
 
 @media (width < 768px) {
@@ -328,4 +407,89 @@ picture {
   .hero.image-bottom picture {
     height: 250px;
   }
+  
+  /* Mobile adjustments for image-background-text-left */
+  .hero.image-background-text-left {
+    padding: 40px 20px;
+    text-align: center;
+  }
+  
+  .hero.image-background-text-left h1,
+  .hero.image-background-text-left h2,
+  .hero.image-background-text-left h3,
+  .hero.image-background-text-left h4,
+  .hero.image-background-text-left h5,
+  .hero.image-background-text-left h6,
+  .hero.image-background-text-left p {
+    text-align: center;
+  }
+  
+  .hero.image-background-text-left .button-container {
+    text-align: center;
+  }
+  
+  /* Mobile adjustments for image-background-text-right */
+  .hero.image-background-text-right {
+    padding: 40px 20px;
+    text-align: center;
+  }
+  
+  .hero.image-background-text-right h1,
+  .hero.image-background-text-right h2,
+  .hero.image-background-text-right h3,
+  .hero.image-background-text-right h4,
+  .hero.image-background-text-right h5,
+  .hero.image-background-text-right h6,
+  .hero.image-background-text-right p,
+  .hero.image-background-text-right .button-container {
+    text-align: left;
+  }
+  
+  .hero.image-background-text-right .button-container {
+    text-align: center;
+  }
+}
+
+/* --------------------------
+   Background Style Variations
+--------------------------- */
+
+/* Theme Dark Background Style */
+.hero.theme-dark {
+  background: var(--dark-color);
+}
+
+.hero.theme-dark h1,
+.hero.theme-dark h2,
+.hero.theme-dark h3,
+.hero.theme-dark h4,
+.hero.theme-dark h5,
+.hero.theme-dark h6,
+.hero.theme-dark p {
+  color: var(--light-color);
+}
+
+.hero.theme-dark .button-container a.button {
+  color: var(--light-color);
+  border-color: var(--light-color);
+}
+
+/* Theme Light Background Style */
+.hero.theme-light {
+  background: var(--light-color);
+}
+
+.hero.theme-light h1,
+.hero.theme-light h2,
+.hero.theme-light h3,
+.hero.theme-light h4,
+.hero.theme-light h5,
+.hero.theme-light h6,
+.hero.theme-light p {
+  color: var(--dark-color);
+}
+
+.hero.theme-light .button-container a.button {
+  color: var(--dark-color);
+  border-color: var(--dark-color);
 }

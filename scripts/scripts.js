@@ -24,6 +24,7 @@ import {
   formatDate,
   setPageLanguage,
   PATH_PREFIX,
+  createSource
 } from './utils.js';
 
 
@@ -238,17 +239,61 @@ async function loadEager(doc) {
 }
 
 /**
+ * Create section background image
+ *
+ * @param {*} doc
+ */
+// function decorateSectionImages(doc) {
+//   const sectionImgContainers = doc.querySelectorAll('main .section[data-image]');
+//   sectionImgContainers.forEach((sectionImgContainer) => {
+//     const sectionImg = sectionImgContainer.dataset.image;
+//     const sectionTabImg = sectionImgContainer.dataset.tabImage;
+//     const sectionMobImg = sectionImgContainer.dataset.mobImage;
+//     let defaultImgUrl = null;
+
+//     const newPic = document.createElement('picture');
+//     if (sectionImg) {
+//       newPic.appendChild(createSource(sectionImg, 1920, '(min-width: 1024px)'));
+//       defaultImgUrl = sectionImg;
+//     }
+
+//     if (sectionTabImg) {
+//       newPic.appendChild(createSource(sectionTabImg, 1024, '(min-width: 768px)'));
+//       defaultImgUrl = sectionTabImg;
+//     }
+
+//     if (sectionMobImg) {
+//       newPic.appendChild(createSource(sectionTabImg, 600, '(max-width: 767px)'));
+//       defaultImgUrl = sectionMobImg;
+//     }
+
+//     const newImg = document.createElement('img');
+//     newImg.src = defaultImgUrl;
+//     newImg.alt = '';
+//     newImg.className = 'sec-img';
+//     newImg.loading = 'lazy';
+//     newImg.width = '768';
+//     newImg.height = '100%';
+
+//     if (defaultImgUrl) {
+//       newPic.appendChild(newImg);
+//       sectionImgContainer.prepend(newPic);
+//     }
+//   });
+// }
+
+/**
  * Loads everything that doesn't need to be delayed.
  * @param {Element} doc The container element
  */
 async function loadLazy(doc) {
   const main = doc.querySelector('main');
   await loadSections(main);
-
+  //decorateSectionImages(doc);
   const { hash } = window.location;
   const element = hash ? doc.getElementById(hash.substring(1)) : false;
   if (hash && element) element.scrollIntoView();
-
+  //decorateSectionImages(doc);
   loadHeader(doc.querySelector('header'));
   loadFooter(doc.querySelector('footer'));
 

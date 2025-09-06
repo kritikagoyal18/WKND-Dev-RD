@@ -20,66 +20,72 @@
     {
       "id": "contentfragment",
       "fields": [
-      {
-        "component": "aem-content",
-        "name": "reference",
-        "label": "Reference",
-        "valueType": "string",
-        "required": true,
-        "validation": {
-            "rootPath": "/content/dam"
-        }
-      },
-      {
-        "component": "select",
-        "name": "style",
-        "label": "Choose Variation",
-        "options": [
-          {
-            "name": "Master",
-            "value": "master"
-          },
+        {
+          "component": "aem-content",
+          "name": "reference",
+          "label": "Reference",
+          "valueType": "string",
+          "required": true,
+          "validation": {
+              "rootPath": "/content/dam"
+          }
+        },
+        {
+           "component": "text",
+            "name": "variation",
+            "value": "",
+            "label": "Variation",
+            "valueType": "string",
+            "description": "Provide variation name to retrieve the CF content. If left empty, by default master variation will be used."
+        },
+        {
+          "component": "select",
+          "name": "displaystyle",
+          "label": "Style",
+          "options": [
             {
-            "name": "Mobile",
-            "value": "mobile"
-          }
-        ]
-      },
-      {
-         "component": "text",
-          "name": "variation",
-          "value": "",
-          "label": "Variation",
-          "valueType": "string"
-      },
-      {
-        "component": "select",
-        "name": "displaystyle",
-        "label": "Style",
-        "options": [
-          {
-            "name": "default",
-            "value": ""
-          },
-          {
-            "name": "Image Left",
-            "value": "image-left"
-          },
-          {
-            "name": "Image Right",
-            "value": "image-right"
-          },
-          {
-            "name": "Image Top",
-            "value": "image-top"
-          },
-          {
-            "name": "Image Bottom",
-            "value": "image-bottom"
-          }
-        ]
-      }
-    ]
+              "name": "default",
+              "value": ""
+            },
+            {
+              "name": "Image Left",
+              "value": "image-left"
+            },
+            {
+              "name": "Image Right",
+              "value": "image-right"
+            },
+            {
+              "name": "Image Top",
+              "value": "image-top"
+            },
+            {
+              "name": "Image Bottom",
+              "value": "image-bottom"
+            }
+          
+          ]
+        },
+        {
+          "component": "select",
+          "name": "alignment",
+          "label": "Alignment",
+          "options": [
+            {
+              "name": "Text Left",
+              "value": "text-left"
+            },
+            {
+              "name": "Text Right",
+              "value": "text-right"
+            },
+            {
+              "name": "Text Center",
+              "value": "text-center"
+            }
+          ]
+        }
+      ]
     }
   ],
   "filters": []
