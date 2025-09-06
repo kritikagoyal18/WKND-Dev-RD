@@ -15,7 +15,7 @@ export default async function decorate(block) {
   const langCode = getLanguage();
   const siteName = await getSiteName();
   const isAuthor = isAuthorEnvironment();
-  let footerPath ='/footer';
+  let footerPath =`/${langCode}/footer`;
 
   if(isAuthor){
     footerPath = footerMeta
