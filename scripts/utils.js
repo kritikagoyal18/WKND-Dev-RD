@@ -107,8 +107,9 @@ export function getPathDetails() {
   /* 5 is the index of the language in the path for AEM content paths like
      /content/wknd-universal/language-masters/en/path/to/content.html
      2 is the index of the language in the path for EDS paths like /en/path/to/content
-    */
-  let langCode = isContentPath ? safeLangGet(4) : safeLangGet(0);
+  */
+  
+  let langCode = isContentPath ? safeLangGet(4) : safeLangGet(1);
   // remove suffix from lang if any
   if (langCode.indexOf('.') > -1) {
     langCode = langCode.substring(0, langCode.indexOf('.'));
