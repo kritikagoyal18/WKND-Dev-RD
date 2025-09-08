@@ -37,7 +37,6 @@
   --search-input-height: 40px;
   padding-top: 0;
   max-width: 100%;
-  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -242,11 +241,14 @@
   border: 1px solid #dadada;
   border-radius: 8px;
   max-height: 60vh;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
   display: block; /* list view inside dropdown */
   margin-top: 16px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* optional cancel button appearance for webkit */
@@ -299,6 +301,8 @@ html[dir="rtl"] .search .search-box input[type="search"]::-webkit-search-cancel-
   display: flex;
   padding: 8px;
   margin-bottom: 8px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .search .search-dropdown .search-results > li > a {
@@ -308,6 +312,8 @@ html[dir="rtl"] .search .search-box input[type="search"]::-webkit-search-cancel-
   column-gap: 12px;
   align-items: start;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .search .search-dropdown .search-results > li .search-result-image {
