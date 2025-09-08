@@ -867,6 +867,21 @@
           "component": "aem-content",
           "name": "searchPath",
           "label": "Search Path"
+        },
+        {
+          "component": "select",
+          "name": "searchstyle",
+          "label": "Search Style",
+          "options": [
+            {
+              "name": "Search Bar",
+              "value": "search-bar"
+            },
+            {
+              "name": "Search Icon",
+              "value": "search-icon"
+            }
+          ]
         }
       ]
   },
