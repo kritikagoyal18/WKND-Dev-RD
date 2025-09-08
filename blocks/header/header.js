@@ -270,9 +270,9 @@ function closeSearchBox() {
   const overlay = document.querySelector('.overlay');
   //const searchImage = document.querySelector('.-light');
   const searchImage = document.querySelector('.icon-search-light');
-  if(searchContainer){
-    searchContainer.style.display = 'none';
-  }
+  // if(searchContainer){
+  //   searchContainer.style.display = 'none';
+  // }
   if(cancelContainer){
     cancelContainer.style.display = 'none';
   }
