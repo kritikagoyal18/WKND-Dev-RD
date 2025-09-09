@@ -285,9 +285,14 @@ function searchInput(block, config) {
   input.placeholder = searchPlaceholder;
   input.setAttribute('aria-label', searchPlaceholder);
 
-  input.addEventListener('input', (e) => {
-    handleSearch(e, block, config);
-  });
+  // Only attach suggestion handler for icon variant (overlay).
+  // For search-bar variant, we disable suggestions and rely on Enter to expand.
+  const isIconVariant = block.classList.contains('search-icon');
+  if (isIconVariant) {
+    input.addEventListener('input', (e) => {
+      handleSearch(e, block, config);
+    });
+  }
 
   input.addEventListener('keyup', (e) => { if (e.code === 'Escape') { clearSearch(block); } });
 
@@ -305,15 +310,23 @@ function searchBox(block, config) {
   box.classList.add('search-box');
   const input = searchInput(block, config);
   const icon = searchIcon();
-  const dropdown = document.createElement('div');
-  dropdown.className = 'search-dropdown';
-  const results = searchResultsContainer(block);
-  dropdown.append(results);
-  box.append(
-    input,
-    icon,
-    dropdown,
-  );
+  const isIconVariant = block.classList.contains('search-icon');
+  if (isIconVariant) {
+    const dropdown = document.createElement('div');
+    dropdown.className = 'search-dropdown';
+    const results = searchResultsContainer(block);
+    dropdown.append(results);
+    box.append(
+      input,
+      icon,
+      dropdown,
+    );
+  } else {
+    box.append(
+      input,
+      icon,
+    );
+  }
 
   return box;
 }
@@ -324,7 +337,7 @@ function buildExpandedLayout(block) {
   if (expanded) return {
     expanded,
     filters: expanded.querySelector('.search-filters'),
-    results: expanded.querySelector('.search-expanded-results'),
+    results: expanded.querySelector('.search-expanded-results .search-results'),
   };
 
   expanded = document.createElement('div');
@@ -597,6 +610,10 @@ export default async function decorate(block) {
         await activateExpandedSearch(block, { source, placeholders }, input.value);
       }
     });
+
+    // Ensure suggestions are hidden for search-bar variant
+    const dropdown = block.querySelector('.search-dropdown');
+    if (dropdown) dropdown.remove();
   }
 
   if (searchParams.get('q')) {
