@@ -3,6 +3,7 @@ import {
   decorateIcons
 } from '../../scripts/aem.js';
 import { fetchPlaceholders } from '../../scripts/placeholders.js';
+import { getLanguage } from '../../scripts/utils.js';
 
 const searchParams = new URLSearchParams(window.location.search);
 
@@ -596,6 +597,35 @@ export default async function decorate(block) {
     trigger.addEventListener('click', openOverlay);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) closeOverlay(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay(); });
+
+    // Enter in icon variant should redirect to /{lang}/search?q=...
+    const getLocalePrefix = () => {
+      try {
+        const lang = getLanguage();
+        console.log('lang', lang);
+        return lang ? `/${lang}` : '';
+      } catch (e) {
+        const htmlLang = (document.documentElement.getAttribute('lang') || '').trim();
+        const langMatch = htmlLang.match(/^[a-z]{2}(?:-[A-Z]{2})?$/);
+        const locale = langMatch ? htmlLang.split('-')[0] : '';
+        return locale ? `/${locale}` : '';
+      }
+    };
+    const redirectToSearchPage = (query) => {
+      const targetPath = `${getLocalePrefix()}/search`;
+      const url = new URL(targetPath, window.location.origin);
+      if (query && query.trim()) url.searchParams.set('q', query.trim());
+      window.location.href = url.toString();
+    };
+    const overlayInput = panel.querySelector('input.search-input');
+    if (overlayInput) {
+      overlayInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          redirectToSearchPage(overlayInput.value || '');
+        }
+      });
+    }
   } else {
     // bar variant: inline search box with dropdown beneath input
     block.append(
