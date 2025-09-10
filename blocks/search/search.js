@@ -244,7 +244,7 @@ function filterData(searchTerms, data, searchPhrase) {
     const metaContents = `${safeText(result.navTitle || result.title)} ${safeText(result.description)} ${safeText(result.body)} ${safeText(result.path)?.split('/').pop() || ''}`.toLowerCase();
 
     // Prefer exact phrase match across meta contents
-    if (searchPhrase && searchPhrase.length >= 3) {
+    if (searchPhrase && searchPhrase.length >= 2) {
       const phraseIdx = metaContents.indexOf(searchPhrase);
       if (phraseIdx >= 0) {
         foundByPhrase.push({ minIdx: phraseIdx, result });
