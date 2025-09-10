@@ -286,7 +286,7 @@ async function handleSearchImpl(e, block, config) {
     return;
   }
   const searchPhrase = searchValue.toLowerCase().trim();
-  const searchTerms = searchPhrase.split(/\s+/).filter((term) => term && term.length >= 3);
+  const searchTerms = searchPhrase.split(/\s+/).filter((term) => term && term.length >= 2);
 
   const data = (await fetchData(config.source)).filter((r) => !isExcludedResult(r));
   const filteredData = filterData(searchTerms, data, searchPhrase);
@@ -563,7 +563,7 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
   }
 
   const searchPhrase = value.toLowerCase();
-  const searchTerms = searchPhrase.split(/\s+/).filter((t) => t && t.length >= 3);
+  const searchTerms = searchPhrase.split(/\s+/).filter((t) => t && t.length >= 2);
   const base = filterData(searchTerms, data, searchPhrase);
 
   // state

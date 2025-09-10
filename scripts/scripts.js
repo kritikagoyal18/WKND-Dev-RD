@@ -217,8 +217,7 @@ async function renderWBDataLayer() {
  * @param {Element} doc The container element
  */
 async function loadEager(doc) {
-  //setPageLanguage();
-  document.documentElement.lang = 'en';
+  setPageLanguage();
   decorateTemplateAndTheme();
   renderWBDataLayer();
   const main = doc.querySelector('main');
