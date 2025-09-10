@@ -132,6 +132,39 @@ function applySearchPathFilter(data, searchPath) {
   return list.filter((r) => typeof r?.path === 'string' && r.path.toLowerCase().startsWith(prefix));
 }
 
+function deriveScopeFromRaw(raw) {
+  const value = (raw || '').trim();
+  if (!value) return '';
+  const marker = '/language-masters/';
+  const idx = value.indexOf(marker);
+  if (idx >= 0) {
+    const after = value.slice(idx + marker.length);
+    const lang = (after.split('/')[0] || '').trim();
+    return lang ? `/${lang}` : '';
+  }
+  if (value.startsWith('/')) {
+    const seg = value.split('/').filter(Boolean)[0] || '';
+    return seg ? `/${seg}` : '';
+  }
+  return '';
+}
+
+function getScopedPrefix(block) {
+  // forwarded scope from overlay → search page takes precedence
+  if (block && typeof block._forwardedScope === 'string' && block._forwardedScope) return block._forwardedScope;
+  try {
+    const a = block.querySelector(':scope > div:nth-child(1) .button-container a[href]');
+    const raw = (a?.textContent || a?.getAttribute('href') || '').trim();
+    return deriveScopeFromRaw(raw);
+  } catch (e) { /* noop */ }
+  return '';
+}
+
+function attachScopeParam(url, scope) {
+  if (!url || !scope) return;
+  if (scope !== '/') url.searchParams.set('sp', scope);
+}
+
 function isExcludedResult(result) {
   const path = safeText(result.path).toLowerCase();
   const robots = safeText(result.robots).toLowerCase();
@@ -295,24 +328,7 @@ async function handleSearchImpl(e, block, config) {
   const searchPhrase = searchValue.toLowerCase().trim();
   const searchTerms = searchPhrase.split(/\s+/).filter((term) => term && term.length >= 3);
 
-  // derive scope from authored anchor in row 1
-  let authoredPrefix = '';
-  try {
-    const a = block.querySelector(':scope > div:nth-child(1) .button-container a[href]');
-    const raw = (a?.textContent || a?.getAttribute('href') || '').trim();
-    if (raw) {
-      const marker = '/language-masters/';
-      const idx = raw.indexOf(marker);
-      if (idx >= 0) {
-        const after = raw.slice(idx + marker.length);
-        const lang = (after.split('/')[0] || '').trim();
-        if (lang) authoredPrefix = `/${lang}`;
-      } else if (raw.startsWith('/')) {
-        const seg = raw.split('/').filter(Boolean)[0] || '';
-        if (seg) authoredPrefix = `/${seg}`;
-      }
-    }
-  } catch (e) { /* noop */ }
+  const authoredPrefix = getScopedPrefix(block);
   const data = (await fetchData(config.source)).filter((r) => !isExcludedResult(r));
   const scoped = applySearchPathFilter(data, authoredPrefix);
   const filteredData = filterData(searchTerms, scoped, searchPhrase);
@@ -585,24 +601,8 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
   let data = cachedData || block._searchData;
   if (!data) {
     const fetched = (await fetchData(config.source)).filter((r) => !isExcludedResult(r));
-    let authoredPrefix = '';
-    try {
-      const a = block.querySelector(':scope > div:nth-child(1) .button-container a[href]');
-      const raw = (a?.textContent || a?.getAttribute('href') || '').trim();
-      if (raw) {
-        const marker = '/language-masters/';
-        const idx = raw.indexOf(marker);
-        if (idx >= 0) {
-          const after = raw.slice(idx + marker.length);
-          const lang = (after.split('/')[0] || '').trim();
-          if (lang) authoredPrefix = `/${lang}`;
-        } else if (raw.startsWith('/')) {
-          const seg = raw.split('/').filter(Boolean)[0] || '';
-          if (seg) authoredPrefix = `/${seg}`;
-        }
-      }
-    } catch (e) { /* noop */ }
-    data = applySearchPathFilter(fetched, authoredPrefix);
+    const scope = getScopedPrefix(block);
+    data = applySearchPathFilter(fetched, scope);
     block._searchData = data;
   }
 
@@ -735,6 +735,8 @@ export default async function decorate(block) {
       const targetPath = `${getLocalePrefix()}/search`;
       const url = new URL(targetPath, window.location.origin);
       if (query && query.trim()) url.searchParams.set('q', query.trim());
+      // Carry scoped search path to the search page if authored
+      attachScopeParam(url, getScopedPrefix(block));
       window.location.href = url.toString();
     };
     const overlayInput = panel.querySelector('input.search-input');
@@ -769,6 +771,11 @@ export default async function decorate(block) {
   if (searchParams.get('q')) {
     const input = block.querySelector('input');
     input.value = searchParams.get('q');
+    // Apply scoped path forwarded via 'sp' param (from search-icon overlay)
+    const forwardedScope = (new URL(window.location.href)).searchParams.get('sp') || '';
+    if (forwardedScope) {
+      block._forwardedScope = forwardedScope;
+    }
     if (useBarVariant) {
       await activateExpandedSearch(block, { source, placeholders }, input.value);
     } else {
