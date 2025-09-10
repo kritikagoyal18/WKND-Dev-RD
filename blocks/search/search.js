@@ -125,6 +125,13 @@ export async function fetchData(source) {
   }
 }
 
+function applySearchPathFilter(data, searchPath) {
+  const list = Array.isArray(data) ? data : [];
+  const prefix = (searchPath || '').trim().toLowerCase();
+  if (!prefix || prefix === '/' || prefix === '*') return list;
+  return list.filter((r) => typeof r?.path === 'string' && r.path.toLowerCase().startsWith(prefix));
+}
+
 function isExcludedResult(result) {
   const path = safeText(result.path).toLowerCase();
   const robots = safeText(result.robots).toLowerCase();
@@ -288,8 +295,27 @@ async function handleSearchImpl(e, block, config) {
   const searchPhrase = searchValue.toLowerCase().trim();
   const searchTerms = searchPhrase.split(/\s+/).filter((term) => term && term.length >= 3);
 
+  // derive scope from authored anchor in row 1
+  let authoredPrefix = '';
+  try {
+    const a = block.querySelector(':scope > div:nth-child(1) .button-container a[href]');
+    const raw = (a?.textContent || a?.getAttribute('href') || '').trim();
+    if (raw) {
+      const marker = '/language-masters/';
+      const idx = raw.indexOf(marker);
+      if (idx >= 0) {
+        const after = raw.slice(idx + marker.length);
+        const lang = (after.split('/')[0] || '').trim();
+        if (lang) authoredPrefix = `/${lang}`;
+      } else if (raw.startsWith('/')) {
+        const seg = raw.split('/').filter(Boolean)[0] || '';
+        if (seg) authoredPrefix = `/${seg}`;
+      }
+    }
+  } catch (e) { /* noop */ }
   const data = (await fetchData(config.source)).filter((r) => !isExcludedResult(r));
-  const filteredData = filterData(searchTerms, data, searchPhrase);
+  const scoped = applySearchPathFilter(data, authoredPrefix);
+  const filteredData = filterData(searchTerms, scoped, searchPhrase);
   await renderResults(block, config, filteredData, searchTerms, searchPhrase);
 }
 
@@ -558,7 +584,25 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
   // fetch/cached data
   let data = cachedData || block._searchData;
   if (!data) {
-    data = (await fetchData(config.source)).filter((r) => !isExcludedResult(r));
+    const fetched = (await fetchData(config.source)).filter((r) => !isExcludedResult(r));
+    let authoredPrefix = '';
+    try {
+      const a = block.querySelector(':scope > div:nth-child(1) .button-container a[href]');
+      const raw = (a?.textContent || a?.getAttribute('href') || '').trim();
+      if (raw) {
+        const marker = '/language-masters/';
+        const idx = raw.indexOf(marker);
+        if (idx >= 0) {
+          const after = raw.slice(idx + marker.length);
+          const lang = (after.split('/')[0] || '').trim();
+          if (lang) authoredPrefix = `/${lang}`;
+        } else if (raw.startsWith('/')) {
+          const seg = raw.split('/').filter(Boolean)[0] || '';
+          if (seg) authoredPrefix = `/${seg}`;
+        }
+      }
+    } catch (e) { /* noop */ }
+    data = applySearchPathFilter(fetched, authoredPrefix);
     block._searchData = data;
   }
 
@@ -613,12 +657,16 @@ export default async function decorate(block) {
   // Determine source path from the first config row anchor, or existing anchor in block, or locale default
   const configAnchor = block.querySelector(':scope > div:nth-child(1) a[href]');
   const inlineAnchor = block.querySelector('a[href]');
-  let source = configAnchor?.href || inlineAnchor?.href;
+  const candidate = configAnchor?.href || inlineAnchor?.href || '';
+  const isJsonSource = candidate && /\.json(\?|$)/.test(candidate) && /query-index\.json(\?|$)/.test(candidate);
+  let source = isJsonSource ? candidate : '';
   if (!source) {
     const htmlLang = (document.documentElement.getAttribute('lang') || '').trim();
     const langMatch = htmlLang.match(/^[a-z]{2}(?:-[A-Z]{2})?$/);
     const locale = langMatch ? htmlLang.split('-')[0] : '';
     source = `${locale ? `/${locale}` : ''}/query-index.json`;
+    // eslint-disable-next-line no-console
+    if (candidate && !isJsonSource) console.log('[search] ignoring non-JSON config anchor for source:', candidate);
   }
 
   // Read style from second row and hide first two rows (config rows)
