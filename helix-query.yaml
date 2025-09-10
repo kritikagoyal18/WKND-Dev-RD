@@ -3,8 +3,11 @@ version: 1
 indices:
   site-en: &base-site
     include:
+      - '/'
       - '/en'
       - '/en/**'
+    exclude:
+      - '/fr/**'
     target: /en/query-index.json
     properties:
       title:
