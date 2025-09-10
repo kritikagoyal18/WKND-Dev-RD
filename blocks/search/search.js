@@ -81,11 +81,16 @@ function highlightTextElements(terms, elements) {
   });
 }
 
-function getSnippet(result, searchTerms) {
+function getSnippet(result, searchTerms, searchPhrase) {
   const sourceText = (result.body || result.description || '').trim();
   if (!sourceText) return '';
   const lc = sourceText.toLowerCase();
   let bestIdx = -1;
+  // Prefer exact phrase if present
+  if (searchPhrase && searchPhrase.length >= 2) {
+    const phraseIdx = lc.indexOf(searchPhrase);
+    if (phraseIdx >= 0) bestIdx = phraseIdx;
+  }
   searchTerms.forEach((t) => {
     const idx = lc.indexOf(t.toLowerCase());
     if (idx >= 0 && (bestIdx === -1 || idx < bestIdx)) bestIdx = idx;
@@ -120,7 +125,15 @@ export async function fetchData(source) {
   }
 }
 
-function renderResult(result, searchTerms, titleTag) {
+function isExcludedResult(result) {
+  const path = safeText(result.path).toLowerCase();
+  const robots = safeText(result.robots).toLowerCase();
+  if (robots.includes('noindex')) return true;
+  if (/\/(nav|footer)$/i.test(path)) return true;
+  return false;
+}
+
+function renderResult(result, searchTerms, searchPhrase, titleTag) {
   const li = document.createElement('li');
   const a = document.createElement('a');
   a.href = result.path;
@@ -142,7 +155,7 @@ function renderResult(result, searchTerms, titleTag) {
     title.append(link);
     a.append(title);
   }
-  const snippetText = getSnippet(result, searchTerms);
+  const snippetText = getSnippet(result, searchTerms, searchPhrase);
   if (snippetText) {
     const description = document.createElement('p');
     description.textContent = snippetText;
@@ -177,7 +190,7 @@ function clearSearch(block) {
   }
 }
 
-async function renderResults(block, config, filteredData, searchTerms) {
+async function renderResults(block, config, filteredData, searchTerms, searchPhrase) {
   clearSearchResults(block);
   const searchResults = block.querySelector('.search-results');
   const headingTag = searchResults.dataset.h;
@@ -186,7 +199,7 @@ async function renderResults(block, config, filteredData, searchTerms) {
   if (filteredData.length) {
     searchResults.classList.remove('no-results');
     filteredData.forEach((result) => {
-      const li = renderResult(result, searchTerms, headingTag);
+      const li = renderResult(result, searchTerms, searchPhrase, headingTag);
       searchResults.append(li);
     });
     if (dropdown) {
@@ -209,9 +222,10 @@ function compareFound(hit1, hit2) {
   return hit1.minIdx - hit2.minIdx;
 }
 
-function filterData(searchTerms, data) {
+function filterData(searchTerms, data, searchPhrase) {
   const foundInHeader = [];
   const foundInMeta = [];
+  const foundByPhrase = [];
 
   (Array.isArray(data) ? data : []).forEach((result) => {
     let minIdx = -1;
@@ -228,6 +242,15 @@ function filterData(searchTerms, data) {
     }
 
     const metaContents = `${safeText(result.navTitle || result.title)} ${safeText(result.description)} ${safeText(result.body)} ${safeText(result.path)?.split('/').pop() || ''}`.toLowerCase();
+
+    // Prefer exact phrase match across meta contents
+    if (searchPhrase && searchPhrase.length >= 3) {
+      const phraseIdx = metaContents.indexOf(searchPhrase);
+      if (phraseIdx >= 0) {
+        foundByPhrase.push({ minIdx: phraseIdx, result });
+        return;
+      }
+    }
     searchTerms.forEach((term) => {
       const idx = metaContents.indexOf(term);
       if (idx < 0) return;
@@ -240,6 +263,7 @@ function filterData(searchTerms, data) {
   });
 
   return [
+    ...foundByPhrase.sort(compareFound),
     ...foundInHeader.sort(compareFound),
     ...foundInMeta.sort(compareFound),
   ].map((item) => item.result);
@@ -261,11 +285,12 @@ async function handleSearchImpl(e, block, config) {
     clearSearch(block);
     return;
   }
-  const searchTerms = searchValue.toLowerCase().split(/\s+/).filter((term) => !!term);
+  const searchPhrase = searchValue.toLowerCase().trim();
+  const searchTerms = searchPhrase.split(/\s+/).filter((term) => term && term.length >= 3);
 
-  const data = await fetchData(config.source);
-  const filteredData = filterData(searchTerms, data);
-  await renderResults(block, config, filteredData, searchTerms);
+  const data = (await fetchData(config.source)).filter((r) => !isExcludedResult(r));
+  const filteredData = filterData(searchTerms, data, searchPhrase);
+  await renderResults(block, config, filteredData, searchTerms, searchPhrase);
 }
 
 const handleSearch = debounce(handleSearchImpl, 150);
@@ -380,7 +405,16 @@ function getResultTimestamp(result) {
   return NaN;
 }
 
-function applyDateFilter(data, dateRange) {
+// Specific timestamp getters for distinct filters
+function getPublishedTimestamp(result) {
+  return normalizeTimestamp(result.publishDate);
+}
+
+function getModifiedTimestamp(result) {
+  return normalizeTimestamp(result.lastModified);
+}
+
+function applyDateFilter(data, dateRange, getResultTimestamp) {
   if (!dateRange || dateRange === 'any') return data;
   const now = Date.now();
   const ranges = { '24h': 24 * 60 * 60 * 1000, '7d': 7 * 24 * 60 * 60 * 1000, '30d': 30 * 24 * 60 * 60 * 1000 };
@@ -422,8 +456,39 @@ function renderDateFilters(container, selected, onChange) {
   container.append(group);
 }
 
-function applyAllFilters(base, selectedDateRange) {
-  return applyDateFilter(base, selectedDateRange);
+function renderModifiedFilters(container, selected, onChange) {
+  const group = document.createElement('div');
+  group.className = 'filter-group date-range modified-range';
+  const title = document.createElement('h4');
+  title.textContent = 'Modified';
+  group.append(title);
+
+  const options = [
+    { key: 'any', label: 'Any time' },
+    { key: '24h', label: 'Last 24 hours' },
+    { key: '7d', label: 'Last week' },
+    { key: '30d', label: 'Last month' },
+  ];
+  const name = `modified-range-${Math.random().toString(36).slice(2)}`;
+  options.forEach((opt, idx) => {
+    const id = `${name}-${idx}`;
+    const label = document.createElement('label');
+    const rb = document.createElement('input');
+    rb.type = 'radio';
+    rb.name = name;
+    rb.id = id;
+    rb.checked = (selected || 'any') === opt.key;
+    rb.addEventListener('change', () => onChange(opt.key));
+    label.append(rb, document.createTextNode(` ${opt.label}`));
+    group.append(label);
+  });
+  container.append(group);
+}
+
+function applyAllFilters(base, selectedPublishedRange, selectedModifiedRange) {
+  const byPublished = applyDateFilter(base, selectedPublishedRange, getPublishedTimestamp);
+  const byModified = applyDateFilter(byPublished, selectedModifiedRange, getModifiedTimestamp);
+  return byModified;
 }
 
 function renderSortControls(container, selected, onChange) {
@@ -493,22 +558,29 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
   // fetch/cached data
   let data = cachedData || block._searchData;
   if (!data) {
-    data = await fetchData(config.source);
+    data = (await fetchData(config.source)).filter((r) => !isExcludedResult(r));
     block._searchData = data;
   }
 
-  const searchTerms = value.toLowerCase().split(/\s+/).filter((t) => !!t);
-  const base = filterData(searchTerms, data);
+  const searchPhrase = value.toLowerCase();
+  const searchTerms = searchPhrase.split(/\s+/).filter((t) => t && t.length >= 3);
+  const base = filterData(searchTerms, data, searchPhrase);
 
   // state
-  let selectedDateRange = block._selectedDateRange || 'any';
+  let selectedPublishedRange = block._selectedPublishedRange || 'any';
+  let selectedModifiedRange = block._selectedModifiedRange || 'any';
   let sortOrder = block._sortOrder || 'relevance';
 
   const renderFilters = () => {
     filters.innerHTML = '';
-    renderDateFilters(filters, selectedDateRange, (next) => {
-      selectedDateRange = next;
-      block._selectedDateRange = selectedDateRange;
+    renderDateFilters(filters, selectedPublishedRange, (next) => {
+      selectedPublishedRange = next;
+      block._selectedPublishedRange = selectedPublishedRange;
+      renderList();
+    });
+    renderModifiedFilters(filters, selectedModifiedRange, (next) => {
+      selectedModifiedRange = next;
+      block._selectedModifiedRange = selectedModifiedRange;
       renderList();
     });
     renderSortControls(filters, sortOrder, (next) => {
@@ -519,7 +591,7 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
   };
 
   const renderList = () => {
-    const filtered = applySort(applyAllFilters(base, selectedDateRange), sortOrder);
+    const filtered = applySort(applyAllFilters(base, selectedPublishedRange, selectedModifiedRange), sortOrder);
     results.innerHTML = '';
     if (!filtered.length) {
       const msg = document.createElement('li');
@@ -529,7 +601,7 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
       return;
     }
     results.classList.remove('no-results');
-    filtered.forEach((r) => results.append(renderResult(r, searchTerms, results.dataset.h)));
+    filtered.forEach((r) => results.append(renderResult(r, searchTerms, searchPhrase, results.dataset.h)));
   };
 
   renderFilters();
