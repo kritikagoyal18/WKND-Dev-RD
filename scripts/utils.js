@@ -164,10 +164,9 @@ export function computeLocalizedUrl(targetLang) {
     if (!isContentPath) {
       // EDS: /{lang}/{suffix}
       const cleanSuffix = suffix ? suffix.replace(/^\/+/, '') : '';
-      // For English, use root as canonical (no /en prefix)
-      if (targetLang.toLowerCase() === 'en') {
-        const path = cleanSuffix ? `/${cleanSuffix}` : '/';
-        return `${path}${query}${hash}`;
+      if (targetLang.toLowerCase() === 'en' && !cleanSuffix) {
+        // Homepage → root
+        return `/${query}${hash}`.replace(/\/\/?(?=\?|#|$)/, '/');
       }
       const next = `/${targetLang}${cleanSuffix ? `/${cleanSuffix}` : ''}`;
       return `${next}${query}${hash}`;
