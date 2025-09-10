@@ -3,6 +3,7 @@ version: 1
 indices:
   site-en: &base-site
     include:
+      - '/en'
       - '/en/**'
     target: /en/query-index.json
     properties:
@@ -43,5 +44,6 @@ indices:
   site-fr:
     <<: *base-site
     include:
+      - '/fr'
       - '/fr/**'
     target: /fr/query-index.json
