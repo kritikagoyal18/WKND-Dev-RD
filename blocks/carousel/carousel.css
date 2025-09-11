@@ -6,7 +6,7 @@
   margin: 0;
   position: relative;
   box-shadow: none;
-  background-color: var(--light-color);
+  
 }
 .carousel-container .carousel-wrapper {
   padding: 0;
