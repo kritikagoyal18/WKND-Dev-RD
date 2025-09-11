@@ -74,23 +74,7 @@
 /* --------------------------
    Buttons
 --------------------------- */
-.hero-wrapper .button-container a.button {
-  color: var(--text-light);
-  position: relative;
-  display: inline-block;
-  padding: 12px 24px;
-  margin: 10px 0;
-  border-radius: 4px;
-  font-family: var(--heading-font-family);
-  font-weight: 600;
-  font-size: 18px;
-  line-height: 1.2;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  text-decoration: none;
-}
+
 
 /* Primary CTA */
 .hero-wrapper .button-container.cta-button a.button {
@@ -496,4 +480,13 @@ picture {
 .hero.block.overlay div:nth-child(2),.hero.image-background-text-left div:nth-child(2),.hero.image-background-text-right div:nth-child(2) {
   padding: 20px;
   background: rgb(0 0 0 / 50%);
+}
+
+/*button theme hero specific*/
+.hero.block.overlay .button-container.cta-link a.button,.hero.image-background-text-left .button-container.cta-link a.button,.hero.image-background-text-right .button-container.cta-link a.button {
+  color: var(--text-light);
+}
+
+.hero.block.overlay .button-container.cta-link a.button::after  ,.hero.image-background-text-left .button-container.cta-link a.button::after,.hero.image-background-text-right .button-container.cta-link a.button::after  {
+  color: var(--text-light);
 }
