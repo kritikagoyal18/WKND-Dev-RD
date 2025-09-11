@@ -658,7 +658,7 @@
         "options": [
           {
             "name": "Default",
-            "value": ""
+            "value": "overlay"
           },
           {
             "name": "Image Left",

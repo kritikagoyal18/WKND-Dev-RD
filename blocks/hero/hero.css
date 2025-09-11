@@ -493,7 +493,7 @@ picture {
   color: var(--dark-color);
   border-color: var(--dark-color);
 }
-.hero.block.default div:nth-child(2) {
+.hero.block.overlay div:nth-child(2) {
   padding: 20px;
   background: rgb(0 0 0 / 50%);
 }
