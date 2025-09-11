@@ -36,6 +36,7 @@ export default async function decorate(block) {
 	const variationname = block.querySelector(':scope div:nth-child(2) > div')?.textContent?.trim()?.toLowerCase()?.replace(' ', '_') || 'master';
 	const displayStyle = block.querySelector(':scope div:nth-child(3) > div')?.textContent?.trim() || '';
 	const alignment = block.querySelector(':scope div:nth-child(4) > div')?.textContent?.trim() || '';
+	const ctaStyle = block.querySelector(':scope div:nth-child(5) > div')?.textContent?.trim() || 'button';
 
   block.innerHTML = '';
   const isAuthor = isAuthorEnvironment();
@@ -143,11 +144,13 @@ export default async function decorate(block) {
                 <p data-aue-prop="subtitle" data-aue-label="SubTitle" data-aue-type="text" class='cfsubtitle'>${cfReq?.subtitle}</p>
                 
                 <div data-aue-prop="description" data-aue-label="Description" data-aue-type="richtext" class='cfdescription'><p>${cfReq?.description?.plaintext || ''}</p></div>
-                <a href="${cfReq?.ctaUrl ? cfReq.ctaUrl : '#'}" data-aue-prop="ctaUrl" data-aue-label="Button Link/URL" data-aue-type="reference"  target="_blank" rel="noopener" data-aue-filter="page">
-                  <span data-aue-prop="ctalabel" data-aue-label="Button Label" data-aue-type="text">
-                    ${cfReq?.ctalabel}
-                  </span>
-                </a>
+                <p class="button-container ${ctaStyle}">
+                  <a href="${cfReq?.ctaUrl ? cfReq.ctaUrl : '#'}" data-aue-prop="ctaUrl" data-aue-label="Button Link/URL" data-aue-type="reference"  target="_blank" rel="noopener" data-aue-filter="page">
+                    <span data-aue-prop="ctalabel" data-aue-label="Button Label" data-aue-type="text">
+                      ${cfReq?.ctalabel}
+                    </span>
+                  </a>
+                </p>
             </div>
             <div class='banner-logo'>
             </div>

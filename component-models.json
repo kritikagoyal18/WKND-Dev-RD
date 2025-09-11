@@ -450,7 +450,7 @@
         "label": "CTA Style",
         "options": [
          {
-            "name": "Default Button",
+            "name": "Link",
             "value": "cta-default"
           },
           {
