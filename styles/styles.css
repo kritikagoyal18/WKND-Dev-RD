@@ -1054,6 +1054,13 @@ table {
   color: var(--text-light) !important;
   transform: translateX(2px);
 }
+/*cta link*/
+.button-container.cta-link a:hover {
+  color: var(--main-accent-color) !important;
+}
+.button-container.cta-link a:hover::after{
+  color: var(--main-accent-color) !important;
+}
 
 /* Button focus state for accessibility 
  .button-container.cta-button a.button:focus {

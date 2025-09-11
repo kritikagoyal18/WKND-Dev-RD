@@ -451,7 +451,7 @@
         "options": [
          {
             "name": "Link",
-            "value": "cta-default"
+            "value": "cta-link"
           },
           {
             "name": "Primary Button",
@@ -624,7 +624,7 @@
         "options": [
          {
             "name": "Link",
-            "value": "cta-default"
+            "value": "cta-link"
           },
           {
             "name": "Primary Button",
@@ -715,8 +715,8 @@
         "label": "CTA Style",
         "options": [
           {
-            "name": "default",
-            "value": ""
+            "name": "Link",
+            "value": "link"
           },
           {
             "name": "Button",
@@ -727,8 +727,8 @@
             "value": "button-secondary"
           },
           {
-            "name": "Link",
-            "value": "link"
+            "name": "Dark Button",
+            "value": "button-dark"
           }
         ]
       },
@@ -1214,8 +1214,8 @@
         "label": "CTA Style",
          "options": [
           {
-            "name": "Default Button",
-            "value": "default"
+            "name": "Link",
+            "value": "link"
           },
           {
             "name": "Primary Button",
