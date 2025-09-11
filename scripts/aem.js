@@ -359,6 +359,9 @@ function decorateTemplateAndTheme() {
   if (template) addClasses(document.body, template);
   const theme = getMetadata('theme');
   if (theme) addClasses(document.body, theme);
+  // Apply Header-Footer theme classes if present
+  const headerFooterTheme = getMetadata('header-footer-theme');
+  if (headerFooterTheme) addClasses(document.body, headerFooterTheme);
 }
 
 /**

@@ -328,6 +328,23 @@ body.green-theme {
   --main-accent-color: #00ff00;
 }
 
+/* Header-Footer theme variants */
+body.header-footer-main header,
+body.header-footer-main footer {
+  background-color: var(--main-accent-color);
+  color: var(--text-light);
+}
+body.header-footer-black header,
+body.header-footer-black footer {
+  background-color: #000000;
+  color: #ffffff;
+}
+body.header-footer-white header,
+body.header-footer-white footer {
+  background-color: #ffffff;
+  color: #000000;
+}
+
 header {
   height: var(--nav-height);
   min-height: 90px;

@@ -91,6 +91,29 @@
           ]
       },
       {
+        "component": "select",
+        "name": "header-footer-theme",
+        "label": "Header-Footer theme",
+        "options": [
+          {
+            "name": "default",
+            "value": ""
+          },
+          {
+            "name": "Main theme",
+            "value": "header-footer-main"
+          },
+          {
+            "name": "Black theme",
+            "value": "header-footer-black"
+          },
+          {
+            "name": "White theme",
+            "value": "header-footer-white"
+          }
+        ]
+      },
+      {
         "component": "text",
         "valueType": "string",
         "name": "js-files",
