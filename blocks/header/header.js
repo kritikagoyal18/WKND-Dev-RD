@@ -267,7 +267,7 @@ function closeSearchBox() {
   const headerWrapper = document.querySelector('.header-wrapper');
   const searchContainer = headerWrapper ? headerWrapper.querySelector('.search-container') : null;
   const cancelContainer = navWrapper ? navWrapper.querySelector('.cancel-container') : null;
-  const overlay = document.querySelector('.overlay');
+  /*const overlay = document.querySelector('.overlay');*/
   //const searchImage = document.querySelector('.-light');
   const searchImage = document.querySelector('.icon-search-light');
   // if(searchContainer){
@@ -279,9 +279,9 @@ function closeSearchBox() {
   if (searchImage) {
     searchImage.style.display = 'flex';
   }
-  if (overlay) {
+ /* if (overlay) {
     overlay.style.display = 'none';
-  }
+  }*/
   document.body.classList.remove('no-scroll');
 }
 
