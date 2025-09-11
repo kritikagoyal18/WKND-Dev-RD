@@ -322,6 +322,82 @@ header nav .nav-tools {
   grid-area: tools;
   min-width: 20px;
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* language switcher */
+.lang-switcher {
+  position: relative;
+  display: inline-block;
+  margin-left: 16px;
+}
+.lang-switcher .lang-button {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.lang-switcher .lang-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--light-color);
+  color: var(--text-color);
+  border: 1px solid #dadada;
+  border-radius: 6px;
+  list-style: none;
+  padding: 4px 0;
+  margin: 0;
+  min-width: 150px;
+  display: none;
+  z-index: 1000;
+}
+.lang-switcher.open .lang-menu { display: block; }
+.lang-switcher .lang-menu li { padding: 0; }
+.lang-switcher .lang-menu a {
+  display: block;
+  padding: 8px 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.lang-switcher .lang-menu a:hover {
+  background: #f2f2f2;
+}
+
+/* Language item layout: pretitle (code) then country name */
+.lang-switcher .lang-menu .lang-item a {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+.lang-switcher .lang-menu .lang-pretitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color);
+  opacity: 0.7;
+  min-width: 64px;
+}
+.lang-switcher .lang-menu .lang-country {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  text-transform: uppercase;
+}
+
+/* separator between items (not between country and code) */
+.lang-switcher .lang-menu .lang-item + .lang-item {
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+
+/* remove global after adorners for language items */
+.lang-switcher .lang-menu .lang-item a::after {
+  content: none !important;
 }
 
 header nav .nav-tools .cancel-container {
@@ -334,6 +410,10 @@ header nav .nav-tools .icon-search-light  {
   width: 20px;
   margin-bottom: 5px;
 }
+
+/* ensure search and language switcher sit side-by-side inside tools */
+header nav .nav-tools .search-wrapper { display: flex; align-items: center; }
+header nav .nav-tools .lang-switcher { display: inline-flex; }
 
 /* Responsive Styles */
 @media (width < 900px) {

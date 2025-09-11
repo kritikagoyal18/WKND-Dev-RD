@@ -5,7 +5,7 @@ import {
   getNavigationMenu, formatNavigationJsonData,
 } from './navigation.js';
 import {
-  getLanguage, getSiteName, TAG_ROOT, PATH_PREFIX,
+  getLanguage, getSiteName, TAG_ROOT, PATH_PREFIX, SUPPORTED_LANGUAGES, computeLocalizedUrl, discoverLanguagesFromPlaceholders,
 } from '../../scripts/utils.js';
 import {
   button,
@@ -527,6 +527,85 @@ export default async function decorate(block) {
   const navTools = nav.querySelector('.nav-tools');
   if (navTools) {
     const contentWrapper = nav.querySelector('.nav-tools > div[class = "default-content-wrapper"]');
+    // Language switcher (minimal UI)
+    try {
+      const currentLang = getLanguage();
+      const langWrap = document.createElement('div');
+      langWrap.className = 'lang-switcher';
+      const langBtn = document.createElement('button');
+      langBtn.type = 'button';
+      langBtn.className = 'lang-button';
+      langBtn.setAttribute('aria-haspopup', 'listbox');
+      langBtn.setAttribute('aria-expanded', 'false');
+      langBtn.textContent = currentLang.toUpperCase();
+      const langMenu = document.createElement('ul');
+      langMenu.className = 'lang-menu';
+      langMenu.setAttribute('role', 'listbox');
+      const langs = await discoverLanguagesFromPlaceholders();
+      const uniqueLangs = [...new Set(langs && langs.length ? langs : ['en'])];
+      if (uniqueLangs.length <= 1) {
+        langBtn.setAttribute('disabled', 'true');
+        langWrap.classList.add('single-lang');
+      }
+      const regionNames = (() => {
+        try { return new Intl.DisplayNames([navigator.language || 'en'], { type: 'region' }); } catch (e) { return null; }
+      })();
+      const languageNames = (() => {
+        try { return new Intl.DisplayNames([navigator.language || 'en'], { type: 'language' }); } catch (e) { return null; }
+      })();
+
+      uniqueLangs.forEach((raw) => {
+        const code = String(raw).replace('_', '-').toLowerCase();
+        const [langPart, regionPart] = code.split('-');
+        const displayCode = `${langPart}${regionPart ? `-${regionPart}` : ''}`.toUpperCase();
+        const country = regionPart ? (regionNames ? regionNames.of(regionPart.toUpperCase()) : regionPart.toUpperCase())
+          : (languageNames ? languageNames.of(langPart) : langPart.toUpperCase());
+
+        const li = document.createElement('li');
+        li.className = 'lang-item';
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', langPart === currentLang ? 'true' : 'false');
+
+        const link = document.createElement('a');
+        // Use only language segment for routing if site paths are language-based
+        link.href = computeLocalizedUrl(langPart);
+
+        const pre = document.createElement('span');
+        pre.className = 'lang-pretitle';
+        pre.textContent = displayCode;
+
+        const name = document.createElement('span');
+        name.className = 'lang-country';
+        name.textContent = country;
+
+        link.append(name, pre);
+        li.append(link);
+        langMenu.append(li);
+      });
+      langBtn.addEventListener('click', () => {
+        const expanded = langBtn.getAttribute('aria-expanded') === 'true';
+        langBtn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        langWrap.classList.toggle('open', !expanded);
+      });
+      document.addEventListener('click', (e) => {
+        if (!langWrap.contains(e.target)) {
+          langBtn.setAttribute('aria-expanded', 'false');
+          langWrap.classList.remove('open');
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          langBtn.setAttribute('aria-expanded', 'false');
+          langWrap.classList.remove('open');
+        }
+      });
+      langWrap.append(langBtn, langMenu);
+      const targetContainer = contentWrapper || navTools;
+      targetContainer.append(langWrap);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Language switcher init failed', e);
+    }
     
     // Close Search Container on Focus out
     document.addEventListener('click', (e) => {
