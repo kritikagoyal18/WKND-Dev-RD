@@ -178,19 +178,8 @@ export function computeLocalizedUrl(targetLang) {
     const parts = pathname.split('/');
     const siteNameFromPath = parts[2] || '';
     const base = `/content/${siteNameFromPath}${PATH_PREFIX}/${targetLang}`;
-    // Normalize suffix:
-    // - treat ".html" (language root) as empty
-    // - strip any trailing .html from non-empty suffixes to avoid double extensions
-    const normalizedSuffix = (() => {
-      if (!suffix) return '';
-      const withoutLeadingSlashes = suffix.replace(/^\/+/, '');
-      // Remove one or more trailing ".html" occurrences
-      const strippedTrailingHtml = withoutLeadingSlashes.replace(/(?:\.html)+$/i, '');
-      // Treat purely ".html" (or repeated) as empty suffix
-      if (!strippedTrailingHtml || strippedTrailingHtml === '.') return '';
-      return strippedTrailingHtml;
-    })();
-    const withSuffix = normalizedSuffix ? `/${normalizedSuffix}` : '';
+    const cleanSuffix = suffix ? suffix.replace(/^\/+/, '') : '';
+    const withSuffix = cleanSuffix ? `/${cleanSuffix}` : '';
     return `${base}${withSuffix}.html${query}${hash}`;
   } catch (e) {
     // eslint-disable-next-line no-console
