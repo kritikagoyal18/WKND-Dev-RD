@@ -5,8 +5,6 @@ indices:
     include:
       - '/'
       - '/en/**'
-    exclude:
-      - '/fr/**'
     target: /en/query-index.json
     properties:
       title:
@@ -49,3 +47,119 @@ indices:
       - '/fr'
       - '/fr/**'
     target: /fr/query-index.json
+    properties:
+      title:
+        select: main h1
+        value: textContent(el)
+      navTitle:
+        select: head > meta[property="og:title"]
+        value: attribute(el, "content")
+      description:
+        select: head > meta[name="description"]
+        value: attribute(el, "content")
+      body:
+        select: main
+        value: textContent(el)
+      image:
+        select: head > meta[property="og:image"]
+        value: match(attribute(el, "content"), "^(https?:\/\/.*?(wknd.com))+(.*)|^(.*)")
+      publishDate:
+        select: head > meta[name="published-time"]
+        value: parseTimestamp(attribute(el, "content"), "ddd, DD MMM YYYY hh:mm:ss GMT")
+      contentType:
+        select: head > meta[name="content_type"]
+        value: attribute(el, "content")
+      languages:
+        select: head > meta[name="languages"]
+        value: attribute(el, "content")
+      author:
+        select: head > meta[name="author"]
+        value: attribute(el, "content")
+      lastModified:
+        select: none
+        value: parseTimestamp(headers["last-modified"], "ddd, DD MMM YYYY hh:mm:ss GMT")
+      robots:
+        select: head > meta[name="robots"]
+        value: attribute(el, "content")
+
+  site-es:
+    <<: *base-site
+    include:
+      - '/es'
+      - '/es/**'
+    target: /es/query-index.json
+    properties:
+      title:
+        select: main h1
+        value: textContent(el)
+      navTitle:
+        select: head > meta[property="og:title"]
+        value: attribute(el, "content")
+      description:
+        select: head > meta[name="description"]
+        value: attribute(el, "content")
+      body:
+        select: main
+        value: textContent(el)
+      image:
+        select: head > meta[property="og:image"]
+        value: match(attribute(el, "content"), "^(https?:\/\/.*?(wknd.com))+(.*)|^(.*)")
+      publishDate:
+        select: head > meta[name="published-time"]
+        value: parseTimestamp(attribute(el, "content"), "ddd, DD MMM YYYY hh:mm:ss GMT")
+      contentType:
+        select: head > meta[name="content_type"]
+        value: attribute(el, "content")
+      languages:
+        select: head > meta[name="languages"]
+        value: attribute(el, "content")
+      author:
+        select: head > meta[name="author"]
+        value: attribute(el, "content")
+      lastModified:
+        select: none
+        value: parseTimestamp(headers["last-modified"], "ddd, DD MMM YYYY hh:mm:ss GMT")
+      robots:
+        select: head > meta[name="robots"]
+        value: attribute(el, "content")
+
+  site-de:
+    <<: *base-site
+    include:
+      - '/de'
+      - '/de/**'
+    target: /de/query-index.json
+    properties:
+      title:
+        select: main h1
+        value: textContent(el)
+      navTitle:
+        select: head > meta[property="og:title"]
+        value: attribute(el, "content")
+      description:
+        select: head > meta[name="description"]
+        value: attribute(el, "content")
+      body:
+        select: main
+        value: textContent(el)
+      image:
+        select: head > meta[property="og:image"]
+        value: match(attribute(el, "content"), "^(https?:\/\/.*?(wknd.com))+(.*)|^(.*)")
+      publishDate:
+        select: head > meta[name="published-time"]
+        value: parseTimestamp(attribute(el, "content"), "ddd, DD MMM YYYY hh:mm:ss GMT")
+      contentType:
+        select: head > meta[name="content_type"]
+        value: attribute(el, "content")
+      languages:
+        select: head > meta[name="languages"]
+        value: attribute(el, "content")
+      author:
+        select: head > meta[name="author"]
+        value: attribute(el, "content")
+      lastModified:
+        select: none
+        value: parseTimestamp(headers["last-modified"], "ddd, DD MMM YYYY hh:mm:ss GMT")
+      robots:
+        select: head > meta[name="robots"]
+        value: attribute(el, "content")
