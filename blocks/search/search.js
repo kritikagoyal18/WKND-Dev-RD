@@ -469,6 +469,179 @@ function applyDateFilter(data, dateRange, getResultTimestamp) {
   });
 }
 
+// --- Tags helpers ---
+function getResultTags(result) {
+  const raw = result && result.tags;
+  if (Array.isArray(raw)) return raw.map((t) => (typeof t === 'string' ? t.trim() : '')).filter(Boolean);
+  if (typeof raw === 'string') return raw.split(/\s*,\s*/).map((t) => t.trim()).filter(Boolean);
+  return [];
+}
+
+function collectTagsWithCounts(list) {
+  const freq = new Map();
+  (Array.isArray(list) ? list : []).forEach((r) => {
+    getResultTags(r).forEach((t) => {
+      freq.set(t, (freq.get(t) || 0) + 1);
+    });
+  });
+  return [...freq.entries()].map(([key, count]) => ({ key, count })).sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function applyTagFilter(data, selectedTags) {
+  const list = Array.isArray(data) ? data : [];
+  const selected = new Set((Array.isArray(selectedTags) ? selectedTags : []).map((t) => (typeof t === 'string' ? t.trim() : '')).filter(Boolean));
+  if (!selected.size) return list;
+  return list.filter((r) => getResultTags(r).some((t) => selected.has(t)));
+}
+
+function renderTagFilters(container, availableTags, selectedTags, onChange, openPathsSet) {
+  if (!Array.isArray(availableTags) || !availableTags.length) return;
+  const group = document.createElement('div');
+  group.className = 'filter-group tags';
+  const title = document.createElement('h4');
+  title.textContent = 'Tags';
+  group.append(title);
+ 
+  const capitalizeFirst = (text) => {
+    const str = String(text || '');
+    if (!str) return str;
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
+  const splitNamespace = (key) => {
+    const raw = String(key || '');
+    const colonIdx = raw.indexOf(':');
+    if (colonIdx > -1) {
+      const ns = raw.slice(0, colonIdx);
+      const remainder = raw.slice(colonIdx + 1);
+      return { ns: ns || 'Other', remainder };
+    }
+    return { ns: 'Other', remainder: raw };
+  };
+
+  const buildTagTree = (list) => {
+    const root = new Map(); // ns -> node
+    (Array.isArray(list) ? list : []).forEach((t) => {
+      const { ns, remainder } = splitNamespace(t.key);
+      const path = (remainder || '').split('/').filter(Boolean);
+      let nsNode = root.get(ns);
+      if (!nsNode) { nsNode = { name: ns, children: new Map(), leaf: null, count: 0, hasSelected: false }; root.set(ns, nsNode); }
+      let current = nsNode;
+      // if no path, treat as single leaf under namespace
+      if (!path.length) {
+        current.leaf = { key: t.key, label: t.key, count: t.count };
+        return;
+      }
+      path.forEach((seg, idx) => {
+        let child = current.children.get(seg);
+        if (!child) { child = { name: seg, children: new Map(), leaf: null, count: 0, hasSelected: false }; current.children.set(seg, child); }
+        current = child;
+        if (idx === path.length - 1) {
+          current.leaf = { key: t.key, label: seg, count: t.count };
+        }
+      });
+    });
+    const computeCounts = (node) => {
+      let total = node.leaf ? (node.leaf.count || 0) : 0;
+      node.children.forEach((child) => { total += computeCounts(child); });
+      node.count = total;
+      return total;
+    };
+    root.forEach((n) => computeCounts(n));
+    return root;
+  };
+
+  const markSelected = (node, selectedSet) => {
+    let has = node.leaf ? selectedSet.has(node.leaf.key) : false;
+    node.children.forEach((child) => { if (markSelected(child, selectedSet)) has = true; });
+    node.hasSelected = has;
+    return has;
+  };
+
+  const renderNode = (parentEl, node, name, selected, onChange, depth = 0, path = '') => {
+    const hasChildren = node.children && node.children.size;
+    const nodePath = path ? `${path}/${node.name}` : node.name;
+
+    if (hasChildren) {
+      const details = document.createElement('details');
+      details.className = 'tag-collapsible';
+      details.dataset.path = nodePath;
+      // keep open if this branch contains a selected tag
+      const shouldOpen = (depth === 0)
+        || node.hasSelected
+        || (openPathsSet && openPathsSet.has(nodePath));
+      if (shouldOpen) details.open = true;
+
+      const summary = document.createElement('summary');
+      summary.textContent = `${capitalizeFirst(node.name)}${typeof node.count === 'number' ? ` (${node.count})` : ''}`;
+      details.append(summary);
+
+      const content = document.createElement('div');
+      content.className = 'tag-subgroup';
+
+      // Render leaf (selectable) at this node, if present
+      if (node.leaf) {
+        const id = `${name}-${node.leaf.key.replace(/[^a-z0-9]+/gi, '-')}`;
+        const label = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.name = name;
+        cb.id = id;
+        cb.checked = (selected || []).includes(node.leaf.key);
+        cb.addEventListener('change', () => {
+          const next = new Set(selected || []);
+          if (cb.checked) next.add(node.leaf.key); else next.delete(node.leaf.key);
+          onChange([...next]);
+        });
+        const text = document.createTextNode(` ${capitalizeFirst(node.leaf.label)}${typeof node.leaf.count === 'number' ? ` (${node.leaf.count})` : ''}`);
+        label.append(cb, text);
+        content.append(label);
+      }
+
+      [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name)).forEach((child) => {
+        renderNode(content, child, name, selected, onChange, depth + 1, nodePath);
+      });
+
+      details.append(content);
+      parentEl.append(details);
+      return;
+    }
+
+    // Leaf-only node, render checkbox directly
+    if (node.leaf) {
+      const id = `${name}-${node.leaf.key.replace(/[^a-z0-9]+/gi, '-')}`;
+      const label = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.name = name;
+      cb.id = id;
+      cb.checked = (selected || []).includes(node.leaf.key);
+      cb.addEventListener('change', () => {
+        const next = new Set(selected || []);
+        if (cb.checked) next.add(node.leaf.key); else next.delete(node.leaf.key);
+        onChange([...next]);
+      });
+      const text = document.createTextNode(` ${capitalizeFirst(node.leaf.label)}${typeof node.leaf.count === 'number' ? ` (${node.leaf.count})` : ''}`);
+      label.append(cb, text);
+      parentEl.append(label);
+    }
+  };
+
+  const tree = buildTagTree(availableTags);
+  const name = `tags-${Math.random().toString(36).slice(2)}`;
+  // mark selection so collapsibles with selected leaves remain open
+  const selectedSet = new Set((selectedTags || []).filter(Boolean));
+  [...tree.values()].forEach((nsNode) => markSelected(nsNode, selectedSet));
+  [...tree.values()].sort((a, b) => a.name.localeCompare(b.name)).forEach((nsNode) => {
+    const section = document.createElement('div');
+    section.className = 'tag-group';
+    renderNode(section, nsNode, name, selectedTags || [], onChange, 0, '');
+    group.append(section);
+  });
+
+  container.append(group);
+}
+
 function renderDateFilters(container, selected, onChange) {
   const group = document.createElement('div');
   group.className = 'filter-group date-range';
@@ -614,17 +787,23 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
   let selectedPublishedRange = block._selectedPublishedRange || 'any';
   let selectedModifiedRange = block._selectedModifiedRange || 'any';
   let sortOrder = block._sortOrder || 'relevance';
+  let selectedTags = Array.isArray(block._selectedTags) ? block._selectedTags : [];
+  const availableTags = collectTagsWithCounts(data);
 
   const renderFilters = () => {
     filters.innerHTML = '';
+    // Tag filters are injected dynamically via refreshTagFilters()
+    // so only static groups are built here to keep handlers simple
     renderDateFilters(filters, selectedPublishedRange, (next) => {
       selectedPublishedRange = next;
       block._selectedPublishedRange = selectedPublishedRange;
+      refreshTagFilters();
       renderList();
     });
     renderModifiedFilters(filters, selectedModifiedRange, (next) => {
       selectedModifiedRange = next;
       block._selectedModifiedRange = selectedModifiedRange;
+      refreshTagFilters();
       renderList();
     });
     renderSortControls(filters, sortOrder, (next) => {
@@ -632,10 +811,48 @@ async function activateExpandedSearch(block, config, searchValue, cachedData) {
       block._sortOrder = sortOrder;
       renderList();
     });
+    // Insert Tags group at the top initially
+    refreshTagFilters(true);
+  };
+
+  const refreshTagFilters = (insertAtTop = false) => {
+    // available tags should reflect the current result set AFTER date filters, BEFORE tag filters
+    const preTag = applyAllFilters(base, selectedPublishedRange, selectedModifiedRange);
+    const availableTags = collectTagsWithCounts(preTag);
+    const existing = filters.querySelector('.filter-group.tags');
+    // capture currently open paths so we can preserve expand state
+    const openPaths = new Set();
+    if (existing) {
+      existing.querySelectorAll('details.tag-collapsible[open][data-path]').forEach((d) => {
+        const p = d.getAttribute('data-path');
+        if (p) openPaths.add(p);
+      });
+    }
+    if (existing) existing.remove();
+    // Render and optionally move to top
+    const temp = document.createElement('div');
+    renderTagFilters(temp, availableTags, selectedTags, (next) => {
+      selectedTags = next;
+      block._selectedTags = selectedTags;
+      // when tags change, recompute available tags again from preTag (still ignoring tags)
+      refreshTagFilters();
+      renderList();
+    }, openPaths);
+    const newGroup = temp.firstElementChild;
+    if (!newGroup) return;
+    // Always keep Tags group at the top for consistency
+    const first = filters.firstElementChild;
+    if (first) {
+      filters.insertBefore(newGroup, first);
+    } else {
+      filters.appendChild(newGroup);
+    }
   };
 
   const renderList = () => {
-    const filtered = applySort(applyAllFilters(base, selectedPublishedRange, selectedModifiedRange), sortOrder);
+    const preTag = applyAllFilters(base, selectedPublishedRange, selectedModifiedRange);
+    const afterTags = applyTagFilter(preTag, selectedTags);
+    const filtered = applySort(afterTags, sortOrder);
     results.innerHTML = '';
     if (!filtered.length) {
       const msg = document.createElement('li');
