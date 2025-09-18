@@ -33,7 +33,7 @@ indices:
         value: attribute(el, "content")
       tags:
         select: head > meta[name="cq-tags"]
-        values: split(attribute(el, "content"), ", ")
+        value: attribute(el, "content")
       author:
         select: head > meta[name="author"]
         value: attribute(el, "content")
@@ -77,7 +77,7 @@ indices:
         value: attribute(el, "content")
       tags:
         select: head > meta[name="cq-tags"]
-        values: split(attribute(el, "content"), ", ")
+        value: attribute(el, "content")
       author:
         select: head > meta[name="author"]
         value: attribute(el, "content")
@@ -121,7 +121,7 @@ indices:
         value: attribute(el, "content")
       tags:
         select: head > meta[name="cq-tags"]
-        values: split(attribute(el, "content"), ", ")
+        value: attribute(el, "content")
       author:
         select: head > meta[name="author"]
         value: attribute(el, "content")
@@ -165,7 +165,7 @@ indices:
         value: attribute(el, "content")
       tags:
         select: head > meta[name="cq-tags"]
-        values: split(attribute(el, "content"), ", ")
+        value: attribute(el, "content")
       author:
         select: head > meta[name="author"]
         value: attribute(el, "content")
