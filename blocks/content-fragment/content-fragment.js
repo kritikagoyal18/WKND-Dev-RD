@@ -110,6 +110,23 @@ export default async function decorate(block) {
         block.setAttribute('data-aue-type', 'container');
         const imgUrl = isAuthor ? cfReq.bannerimage?._authorUrl : cfReq.bannerimage?._publishUrl;
 
+        // Build background-image styles with WebP + JPEG fallback, preserving current CSS
+        const buildBackgroundStyles = (url, withGradient) => {
+          const src = (url || '').trim();
+          const isWebp = /\.webp(\?|$)/i.test(src);
+          const fallback = isWebp ? src.replace(/\.webp(\?|$)/i, '.jpg$1') : src;
+          // First declaration is the safe fallback for browsers without image-set support
+          const base = withGradient
+            ? `background-image: linear-gradient(90deg,rgba(0,0,0,0.6), rgba(0,0,0,0.1) 80%), url(${fallback});`
+            : `background-image: url(${fallback});`;
+          if (!isWebp) return base;
+          // Second declaration leverages image-set where supported; ignored otherwise
+          const set = withGradient
+            ? `background-image: linear-gradient(90deg,rgba(0,0,0,0.6), rgba(0,0,0,0.1) 80%), image-set(url("${src}") type("image/webp"), url("${fallback}") type("image/jpeg"));`
+            : `background-image: image-set(url("${src}") type("image/webp"), url("${fallback}") type("image/jpeg"));`;
+          return `${base} ${set}`;
+        };
+
         // Determine the layout style
         const isImageLeft = displayStyle === 'image-left';
         const isImageRight = displayStyle === 'image-right';
@@ -123,19 +140,19 @@ export default async function decorate(block) {
         
         if (isImageLeft) {
           // Image-left layout: image on left, text on right
-          bannerContentStyle = 'background-image: url('+imgUrl+');';
+          bannerContentStyle = buildBackgroundStyles(imgUrl, false);
         } else if (isImageRight) {
           // Image-right layout: image on right, text on left
-          bannerContentStyle = 'background-image: url('+imgUrl+');';
+          bannerContentStyle = buildBackgroundStyles(imgUrl, false);
         } else if (isImageTop) {
           // Image-top layout: image on top, text on bottom
-          bannerContentStyle = 'background-image: url('+imgUrl+');';
+          bannerContentStyle = buildBackgroundStyles(imgUrl, false);
         } else if (isImageBottom) {
           // Image-bottom layout: text on top, image on bottom
-          bannerContentStyle = 'background-image: url('+imgUrl+');';
+          bannerContentStyle = buildBackgroundStyles(imgUrl, false);
         }  else {
           // Default layout: image as background with gradient overlay (original behavior)
-          bannerDetailStyle = 'background-image: linear-gradient(90deg,rgba(0,0,0,0.6), rgba(0,0,0,0.1) 80%) ,url('+imgUrl+');';
+          bannerDetailStyle = buildBackgroundStyles(imgUrl, true);
         }
 
         block.innerHTML = `<div class='banner-content block ${displayStyle}' data-aue-resource=${itemId} data-aue-label="Offer Content fragment" data-aue-type="reference" data-aue-filter="contentfragment" style="${bannerContentStyle}">
