@@ -1,6 +1,5 @@
 import { getMetadata } from '../../scripts/aem.js';
-import { isAuthorEnvironment, moveInstrumentation } from '../../scripts/scripts.js';
-import { readBlockConfig } from '../../scripts/aem.js';
+import { isAuthorEnvironment } from '../../scripts/scripts.js';
 
 /**
  *
@@ -11,8 +10,7 @@ export default async function decorate(block) {
   const CONFIG = {
     WRAPPER_SERVICE_URL: 'https://prod-31.westus.logic.azure.com:443/workflows/2660b7afa9524acbae379074ae38501e/triggers/manual/paths/invoke',
     WRAPPER_SERVICE_PARAMS: 'api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kfcQD5S7ovej9RHdGZFVfgvA-eEqNlb6r_ukuByZ64o',
-    GRAPHQL_QUERY: '/graphql/execute.json/wknd-universal/CTAByPath',
-    EXCLUDED_THEME_KEYS: new Set(['brandSite', 'brandLogo'])
+    GRAPHQL_QUERY: '/graphql/execute.json/wknd-universal/CTAByPath'
   };
 	
 	const hostname = getMetadata('hostname');	
@@ -20,13 +18,7 @@ export default async function decorate(block) {
 	
   const aempublishurl = hostname?.replace('author', 'publish')?.replace(/\/$/, '');  
 	
-	//const aempublishurl = getMetadata('publishurl') || '';
-	
-  const persistedquery = '/graphql/execute.json/wknd-universal/CTAByPath';
 
-	//const properties = readBlockConfig(block);
- 
-	
   const contentPath = block.querySelector(':scope div:nth-child(1) > div a')?.textContent?.trim();
   //const variationname = block.querySelector(':scope div:nth-child(2) > div')?.textContent?.trim()?.toLowerCase()?.replace(' ', '_') || 'master';
 	
@@ -244,24 +236,91 @@ export default async function decorate(block) {
             return el?.closest('[data-aue-resource]') || block.querySelector('[data-aue-resource]') || null;
           };
 
-				const fetchCfRootModelJson = async (selectedPath) => {
+          const fetchCfRootModelJson = async (selectedPath) => {
+            try {
+              const auth = block.__cfAuth || {};
+              const authorBase = auth.authorUrl || aemauthorurl || window.location.origin;
+              const url = `${authorBase}${selectedPath}.json`;
+              console.log('[content-fragment] fetching cf root model json:', url);
+              const headers = { 'Accept': 'application/json' };
+              if (auth.token) headers['Authorization'] = `Bearer ${auth.token}`;
+              if (auth.orgId) headers['x-gw-ims-org-id'] = auth.orgId;
+              if (auth.apiKey) headers['x-api-key'] = auth.apiKey;
+              const res = await fetch(url, { method: 'GET', headers, credentials: 'include', mode: 'cors' });
+              console.log('[content-fragment] cf root model json response:', res);
+              if (!res.ok) return { url, error: res.status };
+              const json = await res.json();
+              console.log('[content-fragment] cf root model json:', json);
+              return { url, json };
+            } catch (_) { return null; }
+          };
+
+				// Helper: find previous page-root overlay button relative to a given overlay button
+				const findPrevRootOverlay = (startEl) => {
 					try {
-						const auth = block.__cfAuth || {};
-						const authorBase = auth.authorUrl || aemauthorurl || window.location.origin;
-						const url = `${authorBase}${selectedPath}.json`;
-            console.log('[content-fragment] fetching cf root model json:', url);
-						const headers = { 'Accept': 'application/json' };
-						if (auth.token) headers['Authorization'] = `Bearer ${auth.token}`;
-						if (auth.orgId) headers['x-gw-ims-org-id'] = auth.orgId;
-						if (auth.apiKey) headers['x-api-key'] = auth.apiKey;
-						const res = await fetch(url, { method: 'GET', headers, credentials: 'include', mode: 'cors' });
-            console.log('[content-fragment] cf root model json response:', res);
-						if (!res.ok) return { url, error: res.status };
-						const json = await res.json();
-            console.log('[content-fragment] cf root model json:', json);
-						return { url, json };
+						let el = startEl?.previousElementSibling || null;
+						while (el) {
+							const res = el.getAttribute && el.getAttribute('data-resource');
+							if (typeof res === 'string' && res.includes('/jcr:content/root/')) return el;
+							el = el.previousElementSibling;
+						}
+						let parent = startEl?.parentElement || null;
+						for (let i = 0; i < 3 && parent; i += 1) {
+							let sib = parent.previousElementSibling;
+							while (sib) {
+								const res = sib.getAttribute && sib.getAttribute('data-resource');
+								if (typeof res === 'string' && res.includes('/jcr:content/root/')) return sib;
+								sib = sib.previousElementSibling;
+							}
+							parent = parent.parentElement;
+						}
+						return null;
 					} catch (_) { return null; }
 				};
+
+				// Helper: recursively pick contentFragmentVariation from JSON nodes
+				const pickVariation = (node) => {
+					try {
+						if (!node || typeof node !== 'object') return undefined;
+						if (node.model === 'contentfragment' && typeof node.contentFragmentVariation === 'string') {
+							return node.contentFragmentVariation;
+						}
+						for (const key of Object.keys(node)) {
+							const child = node[key];
+							const found = pickVariation(child);
+							if (found != null) return found;
+						}
+						return undefined;
+					} catch (_) { return undefined; }
+				};
+
+				// On initial render in author, attempt to resolve and fetch the block JSON without requiring selection
+				(async () => {
+					try {
+						const resolveOnce = async () => {
+							// find any overlay that points to our CF item resource
+							const overlay = document.querySelector(`button.overlay[data-resource="${itemId}"]`) 
+								|| document.querySelector(`button.overlay[data-resource="${itemId.replace('urn:aemconnection:', '')}"]`);
+							if (!overlay) return false;
+							const prevRootBtn = findPrevRootOverlay(overlay);
+							const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
+							const path = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
+							if (!path) return false;
+							console.log('[content-fragment] initial block path:', path);
+							const cfRootModel = await fetchCfRootModelJson(path);
+							const json = cfRootModel?.json || null;
+							const variation = json ? pickVariation(json) : undefined;
+							console.log('[content-fragment] initial contentFragmentVariation:', variation ?? '(not found)');
+							return true;
+						};
+
+						for (let i = 0; i < 8; i += 1) {
+							const done = await resolveOnce();
+							if (done) break;
+							await new Promise((r) => setTimeout(r, 400));
+						}
+					} catch (_) { /* ignore */ }
+				})();
 
           const onUeSelect = async (e) => {
             const { target, detail } = e;
@@ -271,9 +330,36 @@ export default async function decorate(block) {
             const resourceEl = getClosestResourceEl(target);
             const resource = resourceEl?.getAttribute('data-aue-resource') || null;
             const selectedPath = resource ? resource.replace('urn:aemconnection:', '') : '';
+            // Determine the nearest previous overlay button with a page root path
+            const selectedOverlayBtn = (target.closest && target.closest('button.overlay,[data-resource]')) || null;
+            const findPrevRootOverlay = (startEl) => {
+              try {
+                let el = startEl?.previousElementSibling || null;
+                while (el) {
+                  const res = el.getAttribute && el.getAttribute('data-resource');
+                  if (typeof res === 'string' && res.includes('/jcr:content/root/')) return el;
+                  el = el.previousElementSibling;
+                }
+                // walk up a couple levels to be safe
+                let parent = startEl?.parentElement || null;
+                for (let i = 0; i < 3 && parent; i += 1) {
+                  let sib = parent.previousElementSibling;
+                  while (sib) {
+                    const res = sib.getAttribute && sib.getAttribute('data-resource');
+                    if (typeof res === 'string' && res.includes('/jcr:content/root/')) return sib;
+                    sib = sib.previousElementSibling;
+                  }
+                  parent = parent.parentElement;
+                }
+                return null;
+              } catch (_) { return null; }
+            };
+            const prevRootBtn = findPrevRootOverlay(selectedOverlayBtn);
+            const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
+            const blockSelectedPath = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
             // eslint-disable-next-line no-console
-            console.log('[content-fragment] selected block path:', selectedPath || '(none)');
-            const cfRootModel = await fetchCfRootModelJson(selectedPath);
+            console.log('[content-fragment] selected block path:', blockSelectedPath || selectedPath || '(none)');
+            const cfRootModel = await fetchCfRootModelJson(blockSelectedPath || selectedPath);
             const json = cfRootModel?.json || null;
             const pickVariation = (node) => {
               try {
@@ -298,14 +384,6 @@ export default async function decorate(block) {
           block.__cfUeSelectAttached = true;
           block.__cfUeSelectHandler = onUeSelect;
         }
-      } catch (error) {
-        block.innerHTML = '';
-      }
+      } catch (_) { block.innerHTML = ''; }
 
-	/*
-  if (!isAuthor) {
-    moveInstrumentation(block, null);
-    block.querySelectorAll('*').forEach((elem) => moveInstrumentation(elem, null));
-  }
-	*/
 }
