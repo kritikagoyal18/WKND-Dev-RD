@@ -273,6 +273,24 @@ export default async function decorate(block) {
             return null;
           };
 
+				const fetchCfRootModelJson = async (selectedPath) => {
+					try {
+						if (!selectedPath) return null;
+						const basePath = selectedPath.split('/jcr:content')[0] || '';
+						if (!basePath) return null;
+						const auth = block.__cfAuth || {};
+						const authorBase = auth.authorUrl || aemauthorurl || window.location.origin;
+						const url = `${authorBase}${basePath}.model.json`;
+						const headers = { 'Accept': 'application/json' };
+						if (auth.token) headers['Authorization'] = `Bearer ${auth.token}`;
+						if (auth.orgId) headers['x-gw-ims-org-id'] = auth.orgId;
+						if (auth.apiKey) headers['x-api-key'] = auth.apiKey;
+						const res = await fetch(url, { method: 'GET', headers, credentials: 'include', mode: 'cors' });
+						if (!res.ok) return { url, error: res.status };
+						return { url, json: await res.json() };
+					} catch (_) { return null; }
+				};
+
           const onUeSelect = async (e) => {
             const { target, detail } = e;
             if (!detail?.selected) return;
@@ -283,22 +301,11 @@ export default async function decorate(block) {
 				const selectedPath = resource ? resource.replace('urn:aemconnection:', '') : '';
 				// eslint-disable-next-line no-console
 				console.log('[content-fragment] selected block path:', selectedPath || '(none)');
-            const [modelDef, aemJson] = await Promise.all([
+				const [modelDef, aemJson, cfRootModel] = await Promise.all([
               fetchBlockModelJson(blockName),
               fetchAemContentJson(resource),
+					    fetchCfRootModelJson(selectedPath),
             ]);
-
-            // eslint-disable-next-line no-console
-            console.log('content-fragment selection', {
-              blockName,
-              resource,
-					selectedPath,
-              modelJsonUrl: modelDef?.url,
-              modelJson: modelDef?.json,
-              aemContentJsonUrl: aemJson?.url,
-              aemContentJson: aemJson?.json,
-              element: resourceEl || block,
-            });
           };
 
           window.addEventListener('aue:ui-select', onUeSelect, true);
