@@ -18,12 +18,7 @@ export default async function decorate(block) {
 	
   const aempublishurl = hostname?.replace('author', 'publish')?.replace(/\/$/, '');  
 	
-
   const contentPath = block.querySelector(':scope div:nth-child(1) > div a')?.textContent?.trim();
-  //const variationname = block.querySelector(':scope div:nth-child(2) > div')?.textContent?.trim()?.toLowerCase()?.replace(' ', '_') || 'master';
-	
-	//console.log("variation : "+properties.variation);
-	//let variationname = properties.variation ? properties.variation : 'master';
 	
 	const variationname = block.querySelector(':scope div:nth-child(2) > div')?.textContent?.trim()?.toLowerCase()?.replace(' ', '_') || 'master';
 	const displayStyle = block.querySelector(':scope div:nth-child(3) > div')?.textContent?.trim() || '';
@@ -31,7 +26,6 @@ export default async function decorate(block) {
 	const ctaStyle = block.querySelector(':scope div:nth-child(5) > div')?.textContent?.trim() || 'button';
 
   block.innerHTML = '';
-  const isAuthor = isAuthorEnvironment();
 
 	// Prepare request configuration based on environment
 	const requestConfig = isAuthor 
@@ -309,8 +303,10 @@ export default async function decorate(block) {
 							console.log('[content-fragment] initial block path:', path);
 							const cfRootModel = await fetchCfRootModelJson(path);
 							const json = cfRootModel?.json || null;
-							const variation = json ? pickVariation(json) : undefined;
-							console.log('[content-fragment] initial contentFragmentVariation:', variation ?? '(not found)');
+              const variation = json ? pickVariation(json) : undefined;
+              console.log('[content-fragment] initial contentFragmentVariation:', variation ?? '(not found)');
+              if (variation && typeof variation === 'string') variationname = variation.toLowerCase().replace(' ', '_');
+              console.log('[content-fragment] initial variationname:', variationname);
 							return true;
 						};
 
@@ -376,8 +372,10 @@ export default async function decorate(block) {
               } catch (_) { return undefined; }
             };
             const contentFragmentVariation = json ? pickVariation(json) : undefined;
-            // eslint-disable-next-line no-console
             console.log('[content-fragment] contentFragmentVariation:', contentFragmentVariation ?? '(not found)');
+            if (contentFragmentVariation && typeof contentFragmentVariation === 'string') {
+              variationname = contentFragmentVariation.toLowerCase().replace(' ', '_');
+            }
           };
 
           window.addEventListener('aue:ui-select', onUeSelect, true);
