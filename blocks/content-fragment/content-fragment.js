@@ -172,6 +172,70 @@ export default async function decorate(block) {
             <div class='banner-logo'>
             </div>
         </div>`;
+
+        // Universal Editor integration: when this content-fragment block is selected in author,
+        // fetch and log both the block model JSON and the selected AEM resource's model JSON.
+        if (isAuthor && !block.__cfUeSelectAttached) {
+          const getClosestResourceEl = (el) => {
+            return el?.closest('[data-aue-resource]') || block.querySelector('[data-aue-resource]') || null;
+          };
+
+          const fetchBlockModelJson = async (name) => {
+            try {
+              const base = (window.hlx && window.hlx.codeBasePath) || '';
+              const candidates = [
+                `${base}/blocks/${name}/${name}.json`,
+                `${base}/blocks/${name}/_${name}.json`,
+              ];
+              for (const url of candidates) {
+                try {
+                  const res = await fetch(url, { credentials: 'omit' });
+                  if (res.ok) return { url, json: await res.json() };
+                } catch (e) { /* ignore */ }
+              }
+            } catch (e) { /* ignore */ }
+            return null;
+          };
+
+          const fetchAemContentJson = async (resource) => {
+            if (!resource || !resource.startsWith('urn:aemconnection:')) return null;
+            const aemPath = resource.replace('urn:aemconnection:', '');
+            const url = `${aemPath}.model.json`;
+            try {
+              const res = await fetch(url, { credentials: 'include' });
+              if (res.ok) return { url, json: await res.json() };
+            } catch (e) { /* ignore */ }
+            return null;
+          };
+
+          const onUeSelect = async (e) => {
+            const { target, detail } = e;
+            if (!detail?.selected) return;
+            if (!block.contains(target)) return;
+            const blockName = block.dataset.blockName || 'content-fragment';
+            const resourceEl = getClosestResourceEl(target);
+            const resource = resourceEl?.getAttribute('data-aue-resource') || null;
+            const [modelDef, aemJson] = await Promise.all([
+              fetchBlockModelJson(blockName),
+              fetchAemContentJson(resource),
+            ]);
+
+            // eslint-disable-next-line no-console
+            console.log('content-fragment selection', {
+              blockName,
+              resource,
+              modelJsonUrl: modelDef?.url,
+              modelJson: modelDef?.json,
+              aemContentJsonUrl: aemJson?.url,
+              aemContentJson: aemJson?.json,
+              element: resourceEl || block,
+            });
+          };
+
+          window.addEventListener('aue:ui-select', onUeSelect, true);
+          block.__cfUeSelectAttached = true;
+          block.__cfUeSelectHandler = onUeSelect;
+        }
         
     
       } catch (error) {
