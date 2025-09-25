@@ -173,7 +173,6 @@ export default async function decorate(block) {
             </div>
         </div>`;
 
-        // Establish UE connection and log token/host details (parity with GenerateImagesRail.js)
         if (isAuthor && !block.__cfUeConnInit) {
           block.__cfUeConnInit = true;
 
@@ -245,34 +244,6 @@ export default async function decorate(block) {
             return el?.closest('[data-aue-resource]') || block.querySelector('[data-aue-resource]') || null;
           };
 
-          const fetchBlockModelJson = async (name) => {
-            try {
-              const base = (window.hlx && window.hlx.codeBasePath) || '';
-              const candidates = [
-                `${base}/blocks/${name}/${name}.json`,
-                `${base}/blocks/${name}/_${name}.json`,
-              ];
-              for (const url of candidates) {
-                try {
-                  const res = await fetch(url, { credentials: 'omit' });
-                  if (res.ok) return { url, json: await res.json() };
-                } catch (e) { /* ignore */ }
-              }
-            } catch (e) { /* ignore */ }
-            return null;
-          };
-
-          const fetchAemContentJson = async (resource) => {
-            if (!resource || !resource.startsWith('urn:aemconnection:')) return null;
-            const aemPath = resource.replace('urn:aemconnection:', '');
-            const url = `${aemPath}.model.json`;
-            try {
-              const res = await fetch(url, { credentials: 'include' });
-              if (res.ok) return { url, json: await res.json() };
-            } catch (e) { /* ignore */ }
-            return null;
-          };
-
 				const fetchCfRootModelJson = async (selectedPath) => {
 					try {
 						const auth = block.__cfAuth || {};
@@ -302,23 +273,32 @@ export default async function decorate(block) {
             const selectedPath = resource ? resource.replace('urn:aemconnection:', '') : '';
             // eslint-disable-next-line no-console
             console.log('[content-fragment] selected block path:', selectedPath || '(none)');
-            fetchCfRootModelJson(selectedPath);
+            const cfRootModel = await fetchCfRootModelJson(selectedPath);
+            const json = cfRootModel?.json || null;
+            const pickVariation = (node) => {
+              try {
+                if (!node || typeof node !== 'object') return undefined;
+                if (node.model === 'contentfragment' && typeof node.contentFragmentVariation === 'string') {
+                  return node.contentFragmentVariation;
+                }
+                for (const key of Object.keys(node)) {
+                  const child = node[key];
+                  const found = pickVariation(child);
+                  if (found != null) return found;
+                }
+                return undefined;
+              } catch (_) { return undefined; }
+            };
+            const contentFragmentVariation = json ? pickVariation(json) : undefined;
+            // eslint-disable-next-line no-console
+            console.log('[content-fragment] contentFragmentVariation:', contentFragmentVariation ?? '(not found)');
           };
 
           window.addEventListener('aue:ui-select', onUeSelect, true);
           block.__cfUeSelectAttached = true;
           block.__cfUeSelectHandler = onUeSelect;
         }
-        
-    
       } catch (error) {
-        console.error('Error rendering content fragment:', {
-          error: error.message,
-          stack: error.stack,
-          contentPath,
-          variationname,
-          isAuthor
-        });
         block.innerHTML = '';
       }
 
