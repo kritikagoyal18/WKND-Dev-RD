@@ -28,9 +28,134 @@ export default async function decorate(block) {
   block.innerHTML = '';
 
   const isAuthor = isAuthorEnvironment();
+  console.log('[content-fragment] init:', { isAuthor, contentPath });
 
-	// Prepare request configuration based on environment
-  console.log('[content-fragment] variationname:', variationname);
+	// Resolve variation BEFORE fetching GraphQL: derive from page node JSON where model === 'contentfragment'
+	if (isAuthor && !variationname) {
+		// Try fast cache first (per page + CF path)
+		try {
+			const cacheKey = `cfVar:${window.location.pathname}:${contentPath}`;
+			const cached = window.sessionStorage && window.sessionStorage.getItem(cacheKey);
+			if (cached) {
+				variationname = cached;
+				console.log('[content-fragment] cache hit for variationname:', variationname);
+			} else {
+				console.log('[content-fragment] cache miss for variationname');
+			}
+		} catch (e) { console.warn('[content-fragment] cache error:', e?.message || e); }
+
+		// Helper: recursively find CF node for this block and return its variation
+		const findCfVariationForPath = (node, cfPath) => {
+			try {
+				if (!node || typeof node !== 'object') return undefined;
+				if (node.model === 'contentfragment' && typeof node.reference === 'string') {
+					if (node.reference === cfPath) {
+						return node.contentFragmentVariation;
+					}
+				}
+				for (const key of Object.keys(node)) {
+					const child = node[key];
+					const found = findCfVariationForPath(child, cfPath);
+					if (found != null) return found;
+				}
+				return undefined;
+			} catch (_) { return undefined; }
+		};
+
+		// Attempt page JSON first (no overlays/selection dependency)
+		if (!variationname) {
+			try {
+				const authorBase = aemauthorurl || window.location.origin;
+				const pageUrl = `${authorBase}${window.location.pathname}.json`;
+				console.log('[content-fragment] fetching page JSON for variation:', pageUrl);
+				const res = await fetch(pageUrl, { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'include' });
+				console.log('[content-fragment] page JSON status:', res.status);
+				if (res.ok) {
+					const pageJson = await res.json();
+					const v = findCfVariationForPath(pageJson, contentPath);
+					if (v && typeof v === 'string') {
+						variationname = v.toLowerCase().replace(' ', '_');
+						console.log('[content-fragment] derived variation from page JSON:', variationname);
+						try {
+							const cacheKey = `cfVar:${window.location.pathname}:${contentPath}`;
+							window.sessionStorage && window.sessionStorage.setItem(cacheKey, variationname);
+							console.log('[content-fragment] cached variationname');
+						} catch (e) { console.warn('[content-fragment] cache write error:', e?.message || e); }
+					} else {
+						console.log('[content-fragment] no contentfragment node found in page JSON for contentPath');
+					}
+				} else {
+					console.warn('[content-fragment] page JSON fetch failed:', res.status);
+				}
+			} catch (e) { console.warn('[content-fragment] page JSON resolution error:', e?.message || e); }
+		}
+		// Helper: find previous page-root overlay button relative to a given overlay button
+		const findPrevRootOverlay = (startEl) => {
+			try {
+				let el = startEl?.previousElementSibling || null;
+				while (el) {
+					const res = el.getAttribute && el.getAttribute('data-resource');
+					if (typeof res === 'string' && res.includes('/jcr:content/root/')) return el;
+					el = el.previousElementSibling;
+				}
+				let parent = startEl?.parentElement || null;
+				for (let i = 0; i < 3 && parent; i += 1) {
+					let sib = parent.previousElementSibling;
+					while (sib) {
+						const res = sib.getAttribute && sib.getAttribute('data-resource');
+						if (typeof res === 'string' && res.includes('/jcr:content/root/')) return sib;
+						sib = sib.previousElementSibling;
+					}
+					parent = parent.parentElement;
+				}
+				return null;
+			} catch (_) { return null; }
+		};
+
+		// Helper: recursively pick contentFragmentVariation from JSON nodes
+		const pickVariation = (node) => {
+			try {
+				if (!node || typeof node !== 'object') return undefined;
+				if (node.model === 'contentfragment' && typeof node.contentFragmentVariation === 'string') {
+					return node.contentFragmentVariation;
+				}
+				for (const key of Object.keys(node)) {
+					const child = node[key];
+					const found = pickVariation(child);
+					if (found != null) return found;
+				}
+				return undefined;
+			} catch (_) { return undefined; }
+		};
+
+		const overlayForBlock = document.querySelector(`button.overlay[data-resource^="urn:aemconnection:${contentPath}/jcr:content/data/"]`)
+			|| document.querySelector(`button.overlay[data-resource^="${contentPath}/jcr:content/data/"]`);
+		if (overlayForBlock) {
+			const prevRootBtn = findPrevRootOverlay(overlayForBlock);
+			const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
+			const path = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
+			if (path) {
+				try {
+					const url = `${window.location.origin}${path}.json`;
+					const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'include' });
+					if (res.ok) {
+						const json = await res.json();
+						const v = pickVariation(json);
+						if (v && typeof v === 'string') variationname = v.toLowerCase().replace(' ', '_');
+					}
+				} catch (_) { /* ignore */ }
+			}
+		}
+	}
+
+	// Fallback default if still empty
+	if (!variationname) {
+		variationname = 'master';
+		console.log('[content-fragment] variation fallback to default:', variationname);
+	}
+
+	// Prepare request configuration based on resolved variation
+  console.log('[content-fragment] using variationname:', variationname);
 	const requestConfig = isAuthor 
   ? {
       url: `${aemauthorurl}${CONFIG.GRAPHQL_QUERY};path=${contentPath};variation=${variationname};ts=${Date.now()}`,
@@ -48,49 +173,40 @@ export default async function decorate(block) {
       })
     };
 
-    try {
-        // Fetch data
-        const response = await fetch(requestConfig.url, {
+	try {
+		// Fetch data
+		if (requestConfig.method === 'GET') {
+			console.log('[content-fragment] GraphQL GET:', requestConfig.url);
+		} else {
+			console.log('[content-fragment] GraphQL POST:', { url: requestConfig.url, body: requestConfig.body });
+		}
+		const response = await fetch(requestConfig.url, {
           method: requestConfig.method,
           headers: requestConfig.headers,
           ...(requestConfig.body && { body: requestConfig.body })
         });
 
-        if (!response.ok) {
-					console.error(`error making cf graphql request:${response.status}`, {
-	          error: error.message,
-	          stack: error.stack,
-	          contentPath,
-	          variationname,
-	          isAuthor
-        	});
+		console.log('[content-fragment] GraphQL status:', response.status);
+		if (!response.ok) {
+			console.error('[content-fragment] GraphQL request failed', { status: response.status, contentPath, variationname, isAuthor });
           block.innerHTML = '';
           return; // Exit early if response is not ok
         } 
 
         let offer;
-        try {
-          offer = await response.json();
-        } catch (parseError) {
-					console.error('Error parsing offer JSON from response:', {
-	          error: error.message,
-	          stack: error.stack,
-	          contentPath,
-	          variationname,
-	          isAuthor
-        	});
+		try {
+			offer = await response.json();
+			console.log('[content-fragment] GraphQL response parsed');
+		} catch (parseError) {
+			console.error('[content-fragment] GraphQL response parse error');
           block.innerHTML = '';
           return;
         }
 
         const cfReq = offer?.data?.ctaByPath?.item;
 
-        if (!cfReq) {
-          console.error('Error parsing response from GraphQL request - no valid data found', {
-            response: offer,
-            contentPath,
-            variationname
-          });
+		if (!cfReq) {
+			console.error('[content-fragment] GraphQL data empty', { contentPath, variationname });
           block.innerHTML = '';
           return; // Exit early if no valid data
         }
@@ -191,8 +307,9 @@ export default async function decorate(block) {
               const token = conn?.sharedContext?.get?.('token');
               const scOrgId = conn?.sharedContext?.get?.('orgId');
               if (typeof token === 'string' && token) {
-                console.log('[content-fragment] token', token);
-                console.log('[content-fragment] token set');
+                console.log('[content-fragment] token present');
+              } else {
+                console.warn('[content-fragment] token missing');
               }
 
               let authorResolved = '';
@@ -212,7 +329,7 @@ export default async function decorate(block) {
                 if (authorResolved) authorResolved = authorResolved.replace(/^(aem:|xwalk:)/, '');
               } catch (_) { /* ignore */ }
 
-              console.log('[content-fragment] UE host details:', { authorUrl: authorResolved, connections, orgId: scOrgId, tokenPresent: !!token });
+              console.log('[content-fragment] UE host details:', { authorUrl: authorResolved, orgId: scOrgId, tokenPresent: !!token });
 
               let apiKey = '';
               try { apiKey = window.localStorage.getItem('aemApiKey') || ''; } catch (_) { /* ignore */ }
@@ -244,10 +361,10 @@ export default async function decorate(block) {
               if (auth.orgId) headers['x-gw-ims-org-id'] = auth.orgId;
               if (auth.apiKey) headers['x-api-key'] = auth.apiKey;
               const res = await fetch(url, { method: 'GET', headers, credentials: 'include', mode: 'cors' });
-              console.log('[content-fragment] cf root model json response:', res);
+              console.log('[content-fragment] cf root model json status:', res.status);
               if (!res.ok) return { url, error: res.status };
               const json = await res.json();
-              console.log('[content-fragment] cf root model json:', json);
+              console.log('[content-fragment] cf root model json parsed');
               return { url, json };
             } catch (_) { return null; }
           };
