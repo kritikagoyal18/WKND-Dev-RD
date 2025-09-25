@@ -281,13 +281,17 @@ export default async function decorate(block) {
 						const auth = block.__cfAuth || {};
 						const authorBase = auth.authorUrl || aemauthorurl || window.location.origin;
 						const url = `${authorBase}${basePath}.model.json`;
+            console.log('[content-fragment] fetching cf root model json:', url);
 						const headers = { 'Accept': 'application/json' };
 						if (auth.token) headers['Authorization'] = `Bearer ${auth.token}`;
 						if (auth.orgId) headers['x-gw-ims-org-id'] = auth.orgId;
 						if (auth.apiKey) headers['x-api-key'] = auth.apiKey;
 						const res = await fetch(url, { method: 'GET', headers, credentials: 'include', mode: 'cors' });
+            console.log('[content-fragment] cf root model json response:', res);
 						if (!res.ok) return { url, error: res.status };
-						return { url, json: await res.json() };
+						const json = await res.json();
+            console.log('[content-fragment] cf root model json:', json);
+						return { url, json };
 					} catch (_) { return null; }
 				};
 
@@ -297,15 +301,11 @@ export default async function decorate(block) {
             if (!block.contains(target)) return;
             const blockName = block.dataset.blockName || 'content-fragment';
             const resourceEl = getClosestResourceEl(target);
-				const resource = resourceEl?.getAttribute('data-aue-resource') || null;
-				const selectedPath = resource ? resource.replace('urn:aemconnection:', '') : '';
-				// eslint-disable-next-line no-console
-				console.log('[content-fragment] selected block path:', selectedPath || '(none)');
-				const [modelDef, aemJson, cfRootModel] = await Promise.all([
-              fetchBlockModelJson(blockName),
-              fetchAemContentJson(resource),
-					    fetchCfRootModelJson(selectedPath),
-            ]);
+            const resource = resourceEl?.getAttribute('data-aue-resource') || null;
+            const selectedPath = resource ? resource.replace('urn:aemconnection:', '') : '';
+            // eslint-disable-next-line no-console
+            console.log('[content-fragment] selected block path:', selectedPath || '(none)');
+            fetchCfRootModelJson(selectedPath);
           };
 
           window.addEventListener('aue:ui-select', onUeSelect, true);
