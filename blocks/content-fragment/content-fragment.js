@@ -173,6 +173,71 @@ export default async function decorate(block) {
             </div>
         </div>`;
 
+        // Establish UE connection and log token/host details (parity with GenerateImagesRail.js)
+        if (isAuthor && !block.__cfUeConnInit) {
+          block.__cfUeConnInit = true;
+
+          const attachWithRetry = async () => {
+            for (let i = 0; i < 5; i += 1) {
+              try {
+                const attach = window.adobe?.uix?.guest?.attach;
+                if (typeof attach !== 'function') {
+                  await new Promise((r) => setTimeout(r, 400));
+                  continue;
+                }
+                const conn = await attach({ id: 'wknd-content-fragment' });
+                return conn || null;
+              } catch (_) {
+                await new Promise((r) => setTimeout(r, 400));
+              }
+            }
+            return null;
+          };
+
+          (async () => {
+            try {
+              const conn = await attachWithRetry();
+              if (!conn) return;
+              block.__cfUE = { conn };
+
+              const token = conn?.sharedContext?.get?.('token');
+              const scOrgId = conn?.sharedContext?.get?.('orgId');
+              if (typeof token === 'string' && token) {
+                console.log('[content-fragment] token', token);
+                console.log('[content-fragment] token set');
+              }
+
+              let authorResolved = '';
+              let connections = {};
+              try {
+                const initialState = await conn.host?.editorState?.get?.();
+                connections = initialState?.connections || {};
+                if (connections && typeof connections === 'object') {
+                  const values = Object.values(connections);
+                  const strVal = values.find((v) => typeof v === 'string');
+                  if (typeof strVal === 'string') authorResolved = strVal;
+                  if (!authorResolved) {
+                    const objVal = values.find((v) => v && typeof v === 'object' && typeof v.url === 'string');
+                    if (objVal) authorResolved = objVal.url;
+                  }
+                }
+                if (authorResolved) authorResolved = authorResolved.replace(/^(aem:|xwalk:)/, '');
+              } catch (_) { /* ignore */ }
+
+              console.log('[content-fragment] UE host details:', { authorUrl: authorResolved, connections, orgId: scOrgId, tokenPresent: !!token });
+
+              let apiKey = '';
+              try { apiKey = window.localStorage.getItem('aemApiKey') || ''; } catch (_) { /* ignore */ }
+              block.__cfAuth = {
+                token: typeof token === 'string' ? token : '',
+                orgId: typeof scOrgId === 'string' ? scOrgId : '',
+                apiKey,
+                authorUrl: authorResolved || aemauthorurl || window.location.origin,
+              };
+            } catch (_) { /* ignore */ }
+          })();
+        }
+
         // Universal Editor integration: when this content-fragment block is selected in author,
         // fetch and log both the block model JSON and the selected AEM resource's model JSON.
         if (isAuthor && !block.__cfUeSelectAttached) {
@@ -214,7 +279,10 @@ export default async function decorate(block) {
             if (!block.contains(target)) return;
             const blockName = block.dataset.blockName || 'content-fragment';
             const resourceEl = getClosestResourceEl(target);
-            const resource = resourceEl?.getAttribute('data-aue-resource') || null;
+				const resource = resourceEl?.getAttribute('data-aue-resource') || null;
+				const selectedPath = resource ? resource.replace('urn:aemconnection:', '') : '';
+				// eslint-disable-next-line no-console
+				console.log('[content-fragment] selected block path:', selectedPath || '(none)');
             const [modelDef, aemJson] = await Promise.all([
               fetchBlockModelJson(blockName),
               fetchAemContentJson(resource),
@@ -224,6 +292,7 @@ export default async function decorate(block) {
             console.log('content-fragment selection', {
               blockName,
               resource,
+					selectedPath,
               modelJsonUrl: modelDef?.url,
               modelJson: modelDef?.json,
               aemContentJsonUrl: aemJson?.url,
