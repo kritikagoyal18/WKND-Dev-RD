@@ -20,7 +20,7 @@ export default async function decorate(block) {
 	
   const contentPath = block.querySelector(':scope div:nth-child(1) > div a')?.textContent?.trim();
 	
-	const variationname = block.querySelector(':scope div:nth-child(2) > div')?.textContent?.trim()?.toLowerCase()?.replace(' ', '_') || 'master';
+	let variationname = "";
 	const displayStyle = block.querySelector(':scope div:nth-child(3) > div')?.textContent?.trim() || '';
 	const alignment = block.querySelector(':scope div:nth-child(4) > div')?.textContent?.trim() || '';
 	const ctaStyle = block.querySelector(':scope div:nth-child(5) > div')?.textContent?.trim() || 'button';
