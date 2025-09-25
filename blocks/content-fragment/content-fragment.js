@@ -27,6 +27,8 @@ export default async function decorate(block) {
 
   block.innerHTML = '';
 
+  const isAuthor = isAuthorEnvironment();
+
 	// Prepare request configuration based on environment
 	const requestConfig = isAuthor 
   ? {
