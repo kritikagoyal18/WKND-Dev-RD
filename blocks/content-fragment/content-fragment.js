@@ -275,12 +275,9 @@ export default async function decorate(block) {
 
 				const fetchCfRootModelJson = async (selectedPath) => {
 					try {
-						if (!selectedPath) return null;
-						const basePath = selectedPath.split('/jcr:content')[0] || '';
-						if (!basePath) return null;
 						const auth = block.__cfAuth || {};
 						const authorBase = auth.authorUrl || aemauthorurl || window.location.origin;
-						const url = `${authorBase}${basePath}.model.json`;
+						const url = `${authorBase}${selectedPath}.json`;
             console.log('[content-fragment] fetching cf root model json:', url);
 						const headers = { 'Accept': 'application/json' };
 						if (auth.token) headers['Authorization'] = `Bearer ${auth.token}`;
