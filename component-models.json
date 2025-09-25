@@ -54,7 +54,7 @@
         "label": "Author"
       },
       {          
-        "component": "aem-content",
+        "component": "aem-content-fragment",
         "name": "theme_cf_reference",
         "label": "Brand Theme",
         "description": "Select the CF with authored values for the brand theme. This will be applied on the pages",
@@ -554,11 +554,12 @@
     "id": "contentfragment",
     "fields": [
       {
-        "component": "aem-content",
+        "component": "aem-content-fragment",
         "name": "reference",
         "label": "Reference",
         "valueType": "string",
         "required": true,
+        "variationName": "contentFragmentVariation",
         "validation": {
             "rootPath": "/content/dam"
         }
@@ -1068,7 +1069,7 @@
           "condition": {
             "===": [{ "var": "config_source" }, "cf"]
           },
-          "component": "aem-content",
+          "component": "aem-content-fragment",
           "name": "reference",
           "label": "Reference",
           "valueType": "string",
