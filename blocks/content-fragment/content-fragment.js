@@ -30,6 +30,7 @@ export default async function decorate(block) {
   const isAuthor = isAuthorEnvironment();
 
 	// Prepare request configuration based on environment
+  console.log('[content-fragment] variationname:', variationname);
 	const requestConfig = isAuthor 
   ? {
       url: `${aemauthorurl}${CONFIG.GRAPHQL_QUERY};path=${contentPath};variation=${variationname};ts=${Date.now()}`,
