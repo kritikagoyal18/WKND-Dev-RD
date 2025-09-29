@@ -1,4 +1,4 @@
-
+import { getMetadata } from '../../scripts/aem.js';
 import { isAuthorEnvironment } from '../../scripts/scripts.js';
 
 /**
@@ -6,6 +6,25 @@ import { isAuthorEnvironment } from '../../scripts/scripts.js';
  * @param {Element} block
  */
 export default async function decorate(block) {
+  const CONFIG = {
+    WRAPPER_SERVICE_URL: 'https://prod-31.westus.logic.azure.com:443/workflows/2660b7afa9524acbae379074ae38501e/triggers/manual/paths/invoke',
+    WRAPPER_SERVICE_PARAMS: 'api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kfcQD5S7ovej9RHdGZFVfgvA-eEqNlb6r_ukuByZ64o',
+    GRAPHQL_QUERY: '/graphql/execute.json/wknd-universal/CTAByPath'
+  };
+	
+	const hostname = getMetadata('hostname');	
+  const aemauthorurl = getMetadata('authorurl') || '';
+	
+  const aempublishurl = hostname?.replace('author', 'publish')?.replace(/\/$/, '');  
+	
+  const contentPath = block.querySelector(':scope div:nth-child(1) > div a')?.textContent?.trim();
+	
+	let variationname = "";
+	const displayStyle = block.querySelector(':scope div:nth-child(3) > div')?.textContent?.trim() || '';
+	const alignment = block.querySelector(':scope div:nth-child(4) > div')?.textContent?.trim() || '';
+	const ctaStyle = block.querySelector(':scope div:nth-child(5) > div')?.textContent?.trim() || 'button';
+
+  // Do not clear immediately; preserve current child structure until new markup is ready
 
   const isAuthor = isAuthorEnvironment();
   console.log('[content-fragment] init:', { isAuthor, contentPath });
