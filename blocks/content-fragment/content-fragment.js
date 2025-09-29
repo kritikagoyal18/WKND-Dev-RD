@@ -376,5 +376,81 @@ const fetchAndRender = async (variationToUse) => {
     window.addEventListener('aue:ui-select', onUeSelect, true);
     block.__cfUeSelectAttached = true;
     block.__cfUeSelectHandler = onUeSelect;
+
+    // Also listen for property changes (e.g., aem-content-fragment reference/variation changes)
+    if (!block.__cfPropChangedAttached) {
+      const findPrevRootOverlayLocal = (startEl) => {
+        try {
+          let el = startEl?.previousElementSibling || null;
+          while (el) {
+            const res = el.getAttribute && el.getAttribute('data-resource');
+            if (typeof res === 'string' && res.includes('/jcr:content/root/')) return el;
+            el = el.previousElementSibling;
+          }
+          let parent = startEl?.parentElement || null;
+          for (let i = 0; i < 3 && parent; i += 1) {
+            let sib = parent.previousElementSibling;
+            while (sib) {
+              const res = sib.getAttribute && sib.getAttribute('data-resource');
+              if (typeof res === 'string' && res.includes('/jcr:content/root/')) return sib;
+              sib = sib.previousElementSibling;
+            }
+            parent = parent.parentElement;
+          }
+          return null;
+        } catch (_) { return null; }
+      };
+
+      const onPropChanged = async (e) => {
+        try {
+          const { target, detail } = e || {};
+          if (!detail || !block.contains(target)) return;
+          const changedProp = detail?.prop || '';
+          // Log the change for observability
+          console.log('[content-fragment] aue:prop:changed', { prop: changedProp, value: detail?.value });
+
+          // If the author changed the variation in the CF widget, mirror it to the simple text field
+          if (changedProp === 'contentFragmentVariation' && typeof detail?.value === 'string') {
+            const next = String(detail.value).toLowerCase().replace(' ', '_');
+            const snapshotBefore = block.querySelector('[data-aue-prop="variation"]')?.textContent || '';
+            if (snapshotBefore !== next) {
+              try { block.querySelector('[data-aue-prop="variation"]').textContent = next; } catch (_) {}
+              variationname = next;
+              console.log('[content-fragment] variation synced from CF widget:', { previous: snapshotBefore, next });
+              await fetchAndRender(variationname);
+            }
+            return;
+          }
+
+          // If the author changed the CF reference, best-effort resolve the new variation and sync
+          if (changedProp === 'reference') {
+            // Try to resolve page-root path via overlays and read model
+            const overlayForBlock = document.querySelector(`button.overlay[data-resource^="urn:aemconnection:${contentPath}/jcr:content/data/"]`) || document.querySelector(`button.overlay[data-resource^="${contentPath}/jcr:content/data/"]`);
+            const prevRootBtn = overlayForBlock ? findPrevRootOverlayLocal(overlayForBlock) : null;
+            const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
+            const path = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
+            if (path) {
+              const cfRootModel = await fetchCfRootModelJson(path);
+              const json = cfRootModel?.json || null;
+              const resolved = json ? (function pick(node){ try{ if(!node||typeof node!=='object') return undefined; if(node.model==='contentfragment'&& typeof node.contentFragmentVariation==='string') return node.contentFragmentVariation; for(const k of Object.keys(node)){ const f=pick(node[k]); if(f!=null) return f; } return undefined; } catch(_){ return undefined; } })(json) : undefined;
+              if (typeof resolved === 'string' && resolved) {
+                const next = resolved.toLowerCase().replace(' ', '_');
+                const snapshotBefore = block.querySelector('[data-aue-prop="variation"]')?.textContent || '';
+                if (snapshotBefore !== next) {
+                  try { block.querySelector('[data-aue-prop="variation"]').textContent = next; } catch (_) {}
+                  variationname = next;
+                  console.log('[content-fragment] variation resolved after reference change:', { previous: snapshotBefore, next });
+                  await fetchAndRender(variationname);
+                }
+              }
+            }
+          }
+        } catch (_) { /* ignore */ }
+      };
+
+      window.addEventListener('aue:prop:changed', onPropChanged, true);
+      block.__cfPropChangedAttached = true;
+      block.__cfPropChangedHandler = onPropChanged;
+    }
   }
 }
