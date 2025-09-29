@@ -40,7 +40,6 @@ export default async function decorate(block) {
 	// Dedup/race-safety for GraphQL fetches
 	let __cfRequestId = 0;
   let __cfAbort = null;
-  let __cfInFlightVariation = '';
 
 	// Ensure UE connection once (provides token/org/authorUrl for subsequent JSON fetches)
 	const ensureUeConnection = async () => {
@@ -119,11 +118,6 @@ export default async function decorate(block) {
 			console.log('[content-fragment] skip GraphQL (unchanged variation):', v);
 			return;
 		}
-		if (__cfInFlightVariation === v) {
-			console.log('[content-fragment] skip GraphQL (in-flight variation):', v);
-			return;
-		}
-		__cfInFlightVariation = v;
 		if (__cfAbort) { try { __cfAbort.abort(); } catch (_) {} }
 		const controller = new AbortController();
 		__cfAbort = controller;
@@ -155,24 +149,20 @@ export default async function decorate(block) {
 				signal: controller.signal
 			});
 			if (reqId !== __cfRequestId) { 
-        __cfInFlightVariation = ''; 
         return; 
       }
       if (!response.ok) {
-				__cfInFlightVariation = '';
 				return;
 			}
 			let offer;
 			try {
 				offer = await response.json();
       } catch (_) {
-				__cfInFlightVariation = '';
 				return;
 			}
 
 			const cfReq = offer?.data?.ctaByPath?.item;
 			if (!cfReq) {
-				__cfInFlightVariation = '';
 				return;
 			}
 
@@ -212,9 +202,8 @@ export default async function decorate(block) {
 			</div>`;
 
 			block.__cfRenderedFor = v;
-			__cfInFlightVariation = '';
 
-    } catch (_) { __cfInFlightVariation = ''; }
+    } catch (_) { }
 	};
 
 	// Remove legacy author helpers and proceed directly
