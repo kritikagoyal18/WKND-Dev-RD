@@ -24,7 +24,7 @@ export default async function decorate(block) {
 	const alignment = block.querySelector(':scope div:nth-child(4) > div')?.textContent?.trim() || '';
 	const ctaStyle = block.querySelector(':scope div:nth-child(5) > div')?.textContent?.trim() || 'button';
 
-  block.innerHTML = '';
+  // Do not clear immediately; preserve current child structure until new markup is ready
 
   const isAuthor = isAuthorEnvironment();
   console.log('[content-fragment] init:', { isAuthor, contentPath });
@@ -179,9 +179,8 @@ const fetchAndRender = async (variationToUse) => {
 			});
 			if (reqId !== __cfRequestId) { console.log('[content-fragment] stale GraphQL response ignored'); __cfInFlightVariation = ''; return; }
 			console.log('[content-fragment] GraphQL status:', response.status);
-			if (!response.ok) {
+            if (!response.ok) {
 				console.error('[content-fragment] GraphQL request failed', { status: response.status, contentPath, variation: v, isAuthor });
-				block.innerHTML = '';
 				__cfInFlightVariation = '';
 				return;
 			}
@@ -189,17 +188,15 @@ const fetchAndRender = async (variationToUse) => {
 			try {
 				offer = await response.json();
 				console.log('[content-fragment] GraphQL response parsed');
-			} catch (_) {
+            } catch (_) {
 				console.error('[content-fragment] GraphQL response parse error');
-				block.innerHTML = '';
 				__cfInFlightVariation = '';
 				return;
 			}
 
 			const cfReq = offer?.data?.ctaByPath?.item;
 			if (!cfReq) {
-				console.error('[content-fragment] GraphQL data empty', { contentPath, variation: v });
-				block.innerHTML = '';
+                console.error('[content-fragment] GraphQL data empty', { contentPath, variation: v });
 				__cfInFlightVariation = '';
 				return;
 			}
@@ -243,7 +240,7 @@ const fetchAndRender = async (variationToUse) => {
 			__cfLastFetchedVariation = v;
 			__cfInFlightVariation = '';
 
-		} catch (_) { block.innerHTML = ''; __cfInFlightVariation = ''; }
+        } catch (_) { __cfInFlightVariation = ''; }
 	};
 
 	if (isAuthor) {
