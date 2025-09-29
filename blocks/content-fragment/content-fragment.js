@@ -241,11 +241,14 @@ const fetchAndRender = async (variationToUse) => {
 			// Derive variationname from first :scope element's data-aue-resource last segment
 			try {
 				const firstEl = block.querySelector(':scope *');
+        console.log('[content-fragment] firstEl:', firstEl);
 				const aueRes = firstEl && firstEl.getAttribute('data-aue-resource');
+        console.log('[content-fragment] aueRes:', aueRes);
 				if (aueRes) {
 					const lastSegment = aueRes.split('/').pop() || '';
 					const derived = String(lastSegment).toLowerCase().replace(' ', '_');
-					if (derived && variationname !== derived) {
+          console.log('[content-fragment] derived:', derived);
+					if (derived) {
 						variationname = derived;
 						console.log('[content-fragment] variation derived from aueRes:', variationname);
 					}
