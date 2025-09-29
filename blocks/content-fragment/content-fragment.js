@@ -78,28 +78,6 @@ let __cfInFlightVariation = '';
 		} catch (_) { /* ignore */ }
 	};
 
-	const findPrevRootOverlay = (startEl) => {
-		try {
-			let el = startEl?.previousElementSibling || null;
-			while (el) {
-				const res = el.getAttribute && el.getAttribute('data-resource');
-				if (typeof res === 'string' && res.includes('/jcr:content/root/')) return el;
-				el = el.previousElementSibling;
-			}
-			let parent = startEl?.parentElement || null;
-			for (let i = 0; i < 3 && parent; i += 1) {
-				let sib = parent.previousElementSibling;
-				while (sib) {
-					const res = sib.getAttribute && sib.getAttribute('data-resource');
-					if (typeof res === 'string' && res.includes('/jcr:content/root/')) return sib;
-					sib = sib.previousElementSibling;
-				}
-				parent = parent.parentElement;
-			}
-			return null;
-		} catch (_) { return null; }
-	};
-
 	const pickVariation = (node) => {
 		try {
 			if (!node || typeof node !== 'object') return undefined;
