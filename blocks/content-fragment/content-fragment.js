@@ -279,31 +279,9 @@ const fetchAndRender = async (variationToUse) => {
 				return undefined;
 			} catch (_) { return undefined; }
 		};
-
-		const overlayForBlock = document.querySelector(`button.overlay[data-resource^="urn:aemconnection:${contentPath}/jcr:content/data/"]`)
-			|| document.querySelector(`button.overlay[data-resource^="${contentPath}/jcr:content/data/"]`);
-		if (overlayForBlock) {
-      console.log('[content-fragment] overlay for block found:', overlayForBlock);
-			const prevRootBtn = findPrevRootOverlay(overlayForBlock);
-			const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
-			const path = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
-			if (path) {
-				try {
-					const url = `${window.location.origin}${path}.json`;
-					const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'include' });
-					if (res.ok) {
-						const json = await res.json();
-            console.log('variationname before picking:', variationname);
-						const v = pickVariation(json);
-						if (v && typeof v === 'string') variationname = v.toLowerCase().replace(' ', '_');
-            console.log('variationname after picking:', variationname);
-					}
-				} catch (_) { /* ignore */ }
-			}
-		}
 	}
 
-	// Fallback default if still empty
+	// Fallback to master variation if still empty
 	if (!variationname) {
 		variationname = 'master';
 		console.log('[content-fragment] variation fallback to default:', variationname);
@@ -332,38 +310,6 @@ const fetchAndRender = async (variationToUse) => {
         return undefined;
       } catch (_) { return undefined; }
     };
-
-    // On initial render in author, attempt to resolve and fetch the block JSON without requiring selection
-    // (async () => {
-    //   try {
-    //     const resolveOnce = async () => {
-    //       // find any overlay that points to our CF item resource
-    //       const overlay = document.querySelector(`button.overlay[data-resource="${itemId}"]`) 
-    //         || document.querySelector(`button.overlay[data-resource="${itemId.replace('urn:aemconnection:', '')}"]`);
-    //       if (!overlay) return false;
-    //       const prevRootBtn = findPrevRootOverlay(overlay);
-    //       const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
-    //       const path = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
-    //       if (!path) return false;
-    //       console.log('[content-fragment] initial block path:', path);
-    //         const cfRootModel = await fetchCfRootModelJson(path);
-    //         const json = cfRootModel?.json || null;
-    //         const variation = json ? pickVariation(json) : undefined;
-    //         console.log('[content-fragment] initial contentFragmentVariation:', variation ?? '(not found)');
-    //         if (variation && typeof variation === 'string') {
-    //           variationname = variation.toLowerCase().replace(' ', '_');
-    //           await fetchAndRender(variationname);
-    //         }
-    //       return true;
-    //     };
-
-    //     for (let i = 0; i < 8; i += 1) {
-    //       const done = await resolveOnce();
-    //       if (done) break;
-    //       await new Promise((r) => setTimeout(r, 400));
-    //     }
-    //   } catch (_) { /* ignore */ }
-    // })();
 
     const onUeSelect = async (e) => {
       console.log('[content-fragment] onUeSelect');
