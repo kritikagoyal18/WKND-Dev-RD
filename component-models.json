@@ -556,13 +556,10 @@
       {
         "component": "aem-content-fragment",
         "name": "reference",
-        "label": "Reference",
+        "label": "Content Fragment Picker",
         "valueType": "string",
         "required": true,
-        "variationName": "contentFragmentVariation",
-        "validation": {
-            "rootPath": "/content/dam"
-        }
+        "variationName": "contentFragmentVariation"
       },
       {
          "component": "text",
