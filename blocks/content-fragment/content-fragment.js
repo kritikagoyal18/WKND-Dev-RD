@@ -31,8 +31,8 @@ export default async function decorate(block) {
 
 	// Dedup/race-safety for GraphQL fetches
 	let __cfRequestId = 0;
-let __cfAbort = null;
-let __cfInFlightVariation = '';
+  let __cfAbort = null;
+  let __cfInFlightVariation = '';
 
 	// Ensure UE connection once (provides token/org/authorUrl for subsequent JSON fetches)
 	const ensureUeConnection = async () => {
@@ -283,6 +283,7 @@ const fetchAndRender = async (variationToUse) => {
 		const overlayForBlock = document.querySelector(`button.overlay[data-resource^="urn:aemconnection:${contentPath}/jcr:content/data/"]`)
 			|| document.querySelector(`button.overlay[data-resource^="${contentPath}/jcr:content/data/"]`);
 		if (overlayForBlock) {
+      console.log('[content-fragment] overlay for block found:', overlayForBlock);
 			const prevRootBtn = findPrevRootOverlay(overlayForBlock);
 			const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
 			const path = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
@@ -292,8 +293,10 @@ const fetchAndRender = async (variationToUse) => {
 					const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'include' });
 					if (res.ok) {
 						const json = await res.json();
+            console.log('variationname before picking:', variationname);
 						const v = pickVariation(json);
 						if (v && typeof v === 'string') variationname = v.toLowerCase().replace(' ', '_');
+            console.log('variationname after picking:', variationname);
 					}
 				} catch (_) { /* ignore */ }
 			}
@@ -313,6 +316,7 @@ const fetchAndRender = async (variationToUse) => {
 
 	// Universal Editor integration: when this content-fragment block is selected in author,
 	if (isAuthor && !block.__cfUeSelectAttached) {
+    console.log('[content-fragment] attaching UE select handler');
     const getClosestResourceEl = (el) => el?.closest('[data-aue-resource]') || block.querySelector('[data-aue-resource]') || null;
     const pickVariation = (node) => {
       try {
@@ -362,6 +366,7 @@ const fetchAndRender = async (variationToUse) => {
     // })();
 
     const onUeSelect = async (e) => {
+      console.log('[content-fragment] onUeSelect');
       const { target, detail } = e;
       if (!detail?.selected) return;
       if (!block.contains(target)) return;
