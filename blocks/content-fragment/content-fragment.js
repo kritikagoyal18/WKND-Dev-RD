@@ -30,9 +30,9 @@ export default async function decorate(block) {
   console.log('[content-fragment] init:', { isAuthor, contentPath });
 
 	// Dedup/race-safety for GraphQL fetches
-	let __cfLastFetchedVariation = '';
 	let __cfRequestId = 0;
-	let __cfAbort = null;
+let __cfAbort = null;
+let __cfInFlightVariation = '';
 
 	// Ensure UE connection once (provides token/org/authorUrl for subsequent JSON fetches)
 	const ensureUeConnection = async () => {
@@ -131,13 +131,17 @@ export default async function decorate(block) {
 		} catch (_) { return null; }
 	};
 
-	const fetchAndRender = async (variationToUse) => {
+const fetchAndRender = async (variationToUse) => {
 		const v = (variationToUse || 'master');
-		if (__cfLastFetchedVariation === v) {
+		if (block.__cfRenderedFor === v) {
 			console.log('[content-fragment] skip GraphQL (unchanged variation):', v);
 			return;
 		}
-		__cfLastFetchedVariation = v;
+		if (__cfInFlightVariation === v) {
+			console.log('[content-fragment] skip GraphQL (in-flight variation):', v);
+			return;
+		}
+		__cfInFlightVariation = v;
 		if (__cfAbort) { try { __cfAbort.abort(); } catch (_) {} }
 		const controller = new AbortController();
 		__cfAbort = controller;
@@ -173,11 +177,12 @@ export default async function decorate(block) {
 				...(requestConfig.body && { body: requestConfig.body }),
 				signal: controller.signal
 			});
-			if (reqId !== __cfRequestId) { console.log('[content-fragment] stale GraphQL response ignored'); return; }
+			if (reqId !== __cfRequestId) { console.log('[content-fragment] stale GraphQL response ignored'); __cfInFlightVariation = ''; return; }
 			console.log('[content-fragment] GraphQL status:', response.status);
 			if (!response.ok) {
 				console.error('[content-fragment] GraphQL request failed', { status: response.status, contentPath, variation: v, isAuthor });
 				block.innerHTML = '';
+				__cfInFlightVariation = '';
 				return;
 			}
 			let offer;
@@ -187,6 +192,7 @@ export default async function decorate(block) {
 			} catch (_) {
 				console.error('[content-fragment] GraphQL response parse error');
 				block.innerHTML = '';
+				__cfInFlightVariation = '';
 				return;
 			}
 
@@ -194,6 +200,7 @@ export default async function decorate(block) {
 			if (!cfReq) {
 				console.error('[content-fragment] GraphQL data empty', { contentPath, variation: v });
 				block.innerHTML = '';
+				__cfInFlightVariation = '';
 				return;
 			}
 
@@ -227,16 +234,16 @@ export default async function decorate(block) {
 						<p data-aue-prop="title" data-aue-label="Title" data-aue-type="text" class='cftitle'>${cfReq?.title}</p>
 						<p data-aue-prop="subtitle" data-aue-label="SubTitle" data-aue-type="text" class='cfsubtitle'>${cfReq?.subtitle}</p>
 						<div data-aue-prop="description" data-aue-label="Description" data-aue-type="richtext" class='cfdescription'><p>${cfReq?.description?.plaintext || ''}</p></div>
-						<p class="button-container ${ctaStyle}">
-							<a href="${cfReq?.ctaUrl ? cfReq.ctaUrl : '#'}" data-aue-prop="ctaUrl" data-aue-label="Button Link/URL" data-aue-type="reference"  target="_blank" rel="noopener" data-aue-filter="page" class='button'>
-								<span data-aue-prop="ctalabel" data-aue-label="Button Label" data-aue-type="text">${cfReq?.ctalabel}</span>
-							</a>
-						</p>
+						<p class="button-container ${ctaStyle}"><a href="${cfReq?.ctaUrl ? cfReq.ctaUrl : '#'}" data-aue-prop="ctaUrl" data-aue-label="Button Link/URL" data-aue-type="reference"  target="_blank" rel="noopener" data-aue-filter="page" class='button'><span data-aue-prop="ctalabel" data-aue-label="Button Label" data-aue-type="text">${cfReq?.ctalabel}</span></a></p>
 				</div>
 				<div class='banner-logo'></div>
 			</div>`;
 
-		} catch (_) { block.innerHTML = ''; }
+			block.__cfRenderedFor = v;
+			__cfLastFetchedVariation = v;
+			__cfInFlightVariation = '';
+
+		} catch (_) { block.innerHTML = ''; __cfInFlightVariation = ''; }
 	};
 
 	if (isAuthor) {
