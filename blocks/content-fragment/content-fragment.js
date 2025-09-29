@@ -212,6 +212,7 @@ const fetchAndRender = async (variationToUse) => {
 						<p data-aue-prop="subtitle" data-aue-label="SubTitle" data-aue-type="text" class='cfsubtitle'>${cfReq?.subtitle}</p>
 						<div data-aue-prop="description" data-aue-label="Description" data-aue-type="richtext" class='cfdescription'><p>${cfReq?.description?.plaintext || ''}</p></div>
 						<p class="button-container ${ctaStyle}"><a href="${cfReq?.ctaUrl ? cfReq.ctaUrl : '#'}" data-aue-prop="ctaUrl" data-aue-label="Button Link/URL" data-aue-type="reference"  target="_blank" rel="noopener" data-aue-filter="page" class='button'><span data-aue-prop="ctalabel" data-aue-label="Button Label" data-aue-type="text">${cfReq?.ctalabel}</span></a></p>
+					<span data-aue-prop="variation" data-aue-label="Variation" data-aue-type="text" style="display:none">${v}</span>
 				</div>
 				<div class='banner-logo'></div>
 			</div>`;
@@ -312,6 +313,18 @@ const fetchAndRender = async (variationToUse) => {
     };
 
     const onUeSelect = async (e) => {
+      // Keep the authored variation field in sync when CF reference changes
+      try {
+        const detail = e?.detail || {};
+        const changedProp = detail?.prop || e?.target?.dataset?.aueProp || '';
+        if (changedProp === 'reference' && typeof variationname === 'string' && variationname) {
+          const snapshotBefore = block.querySelector('[data-aue-prop="variation"]')?.textContent || '';
+          if (snapshotBefore !== variationname) {
+            try { block.querySelector('[data-aue-prop="variation"]').textContent = variationname; } catch (_) {}
+            console.log('[content-fragment] variation synced to authored field:', { previous: snapshotBefore, next: variationname });
+          }
+        }
+      } catch (_) { /* ignore */ }
       console.log('[content-fragment] onUeSelect');
       const { target, detail } = e;
       if (!detail?.selected) return;
