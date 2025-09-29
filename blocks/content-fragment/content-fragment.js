@@ -196,13 +196,15 @@ const fetchAndRender = async (variationToUse) => {
 
 			const cfReq = offer?.data?.ctaByPath?.item;
 			if (!cfReq) {
-                console.error('[content-fragment] GraphQL data empty', { contentPath, variation: v });
+        console.error('[content-fragment] GraphQL data empty', { contentPath, variation: v });
 				__cfInFlightVariation = '';
 				return;
 			}
 
 			// Render
-			const itemId = `urn:aemconnection:${contentPath}/jcr:content/data/${v}`;
+      const itemId = `urn:aemconnection:${contentPath}/jcr:content/data/${v}`;
+      // Mark wrapper as container so inner reference is not promoted to a sibling block
+      try { block.setAttribute('data-aue-type', 'container'); } catch (_) {}
 			const imgUrl = isAuthor ? cfReq.bannerimage?._authorUrl : cfReq.bannerimage?._publishUrl;
 			const buildBackgroundStyles = (url, withGradient) => {
 				const src = (url || '').trim();
@@ -236,11 +238,10 @@ const fetchAndRender = async (variationToUse) => {
 				<div class='banner-logo'></div>
 			</div>`;
 
-			block.__cfRenderedFor = v;
-			__cfLastFetchedVariation = v;
+      block.__cfRenderedFor = v;
 			__cfInFlightVariation = '';
 
-        } catch (_) { __cfInFlightVariation = ''; }
+    } catch (_) { __cfInFlightVariation = ''; }
 	};
 
 	if (isAuthor) {
