@@ -29,6 +29,25 @@ export default async function decorate(block) {
   const isAuthor = isAuthorEnvironment();
   console.log('[content-fragment] init:', { isAuthor, contentPath });
 
+	// Debug helper: log all elements under this block's :scope
+	const logScopeElements = (label) => {
+		try {
+			const elements = block.querySelectorAll(':scope *');
+			console.log('[content-fragment] :scope', label || '', 'count=', elements.length);
+			elements.forEach((el, idx) => {
+				const aueProp = el.getAttribute('data-aue-prop');
+				const aueRes = el.getAttribute('data-aue-resource');
+				const aueType = el.getAttribute('data-aue-type');
+				const classes = (el.className || '').toString();
+				const text = (el.textContent || '').trim().slice(0, 120);
+				console.log('[content-fragment] :scope[%d]', idx, { tag: el.tagName?.toLowerCase?.(), classes, aueProp, aueRes, aueType, text });
+			});
+		} catch (_) { /* ignore */ }
+	};
+
+	// Initial dump (pre-render)
+	logScopeElements('before-render');
+
 	// Dedup/race-safety for GraphQL fetches
 	let __cfRequestId = 0;
   let __cfAbort = null;
@@ -215,6 +234,9 @@ const fetchAndRender = async (variationToUse) => {
 				</div>
 				<div class='banner-logo'></div>
 			</div>`;
+
+			// Dump :scope after render
+			logScopeElements('after-render');
 
       block.__cfRenderedFor = v;
 			__cfInFlightVariation = '';
