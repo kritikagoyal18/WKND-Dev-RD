@@ -238,7 +238,21 @@ const fetchAndRender = async (variationToUse) => {
 			// Dump :scope after render
 			logScopeElements('after-render');
 
-      block.__cfRenderedFor = v;
+			// Derive variationname from first :scope element's data-aue-resource last segment
+			try {
+				const firstEl = block.querySelector(':scope *');
+				const aueRes = firstEl && firstEl.getAttribute('data-aue-resource');
+				if (aueRes) {
+					const lastSegment = aueRes.split('/').pop() || '';
+					const derived = String(lastSegment).toLowerCase().replace(' ', '_');
+					if (derived && variationname !== derived) {
+						variationname = derived;
+						console.log('[content-fragment] variation derived from aueRes:', variationname);
+					}
+				}
+			} catch (_) { /* ignore */ }
+
+			block.__cfRenderedFor = v;
 			__cfInFlightVariation = '';
 
     } catch (_) { __cfInFlightVariation = ''; }
