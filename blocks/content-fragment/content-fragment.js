@@ -148,44 +148,35 @@ export default async function decorate(block) {
 			};
 
 		try {
-			if (requestConfig.method === 'GET') {
-				console.log('[content-fragment] GraphQL GET:', requestConfig.url);
-			} else {
-				console.log('[content-fragment] GraphQL POST:', { url: requestConfig.url, body: requestConfig.body });
-			}
 			const response = await fetch(requestConfig.url, {
 				method: requestConfig.method,
 				headers: requestConfig.headers,
 				...(requestConfig.body && { body: requestConfig.body }),
 				signal: controller.signal
 			});
-			if (reqId !== __cfRequestId) { console.log('[content-fragment] stale GraphQL response ignored'); __cfInFlightVariation = ''; return; }
-			console.log('[content-fragment] GraphQL status:', response.status);
-            if (!response.ok) {
-				console.error('[content-fragment] GraphQL request failed', { status: response.status, contentPath, variation: v, isAuthor });
+			if (reqId !== __cfRequestId) { 
+        __cfInFlightVariation = ''; 
+        return; 
+      }
+      if (!response.ok) {
 				__cfInFlightVariation = '';
 				return;
 			}
 			let offer;
 			try {
 				offer = await response.json();
-				console.log('[content-fragment] GraphQL response parsed');
-            } catch (_) {
-				console.error('[content-fragment] GraphQL response parse error');
+      } catch (_) {
 				__cfInFlightVariation = '';
 				return;
 			}
 
 			const cfReq = offer?.data?.ctaByPath?.item;
 			if (!cfReq) {
-        console.error('[content-fragment] GraphQL data empty', { contentPath, variation: v });
 				__cfInFlightVariation = '';
 				return;
 			}
 
-			// Render
       const itemId = `urn:aemconnection:${contentPath}/jcr:content/data/${v}`;
-      // Mark wrapper as container so inner reference is not promoted to a sibling block
       try { block.setAttribute('data-aue-type', 'container'); } catch (_) {}
 			const imgUrl = isAuthor ? cfReq.bannerimage?._authorUrl : cfReq.bannerimage?._publishUrl;
 			const buildBackgroundStyles = (url, withGradient) => {
@@ -256,47 +247,4 @@ export default async function decorate(block) {
 	console.log('[content-fragment] using variationname:', variationname);
 	await ensureUeConnection();
 	await fetchAndRender(variationname);
-
-	// Universal Editor integration (author): listen for property changes only (variation/reference)
-	if (isAuthor && !block.__cfPropChangedAttached) {
-		const onPropChanged = async (e) => {
-			try {
-				const { target, detail } = e || {};
-				if (!detail || !block.contains(target)) return;
-				const changedProp = detail?.prop || '';
-				console.log('[content-fragment] aue:prop:changed', { prop: changedProp, value: detail?.value });
-
-				if (changedProp === 'contentFragmentVariation' && typeof detail?.value === 'string') {
-					const next = String(detail.value).toLowerCase().replace(' ', '_');
-					if (variationname !== next) {
-						variationname = next;
-						await fetchAndRender(variationname);
-					}
-					return;
-				}
-
-				if (changedProp === 'reference') {
-					await ensureUeConnection();
-					const authored = (block.dataset && (block.dataset.aueResource || block.dataset["aueResource"])) || '';
-					if (authored) {
-						const path = authored.replace('urn:aemconnection:', '');
-						const cfRootModel = await fetchCfRootModelJson(path);
-						const json = cfRootModel?.json || null;
-						const resolved = json ? pickVariation(json) : undefined;
-						if (typeof resolved === 'string' && resolved) {
-							const next = resolved.toLowerCase().replace(' ', '_');
-							if (variationname !== next) {
-								variationname = next;
-								await fetchAndRender(variationname);
-							}
-						}
-					}
-				}
-			} catch (_) { /* ignore */ }
-		};
-
-		window.addEventListener('aue:prop:changed', onPropChanged, true);
-		block.__cfPropChangedAttached = true;
-		block.__cfPropChangedHandler = onPropChanged;
-	}
 }
