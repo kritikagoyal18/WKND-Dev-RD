@@ -193,9 +193,6 @@ const fetchAndRender = async (variationToUse) => {
 						<p data-aue-prop="subtitle" data-aue-label="SubTitle" data-aue-type="text" class='cfsubtitle'>${cfReq?.subtitle}</p>
 						<div data-aue-prop="description" data-aue-label="Description" data-aue-type="richtext" class='cfdescription'><p>${cfReq?.description?.plaintext || ''}</p></div>
 						<p class="button-container ${ctaStyle}"><a href="${cfReq?.ctaUrl ? cfReq.ctaUrl : '#'}" data-aue-prop="ctaUrl" data-aue-label="Button Link/URL" data-aue-type="reference"  target="_blank" rel="noopener" data-aue-filter="page" class='button'><span data-aue-prop="ctalabel" data-aue-label="Button Label" data-aue-type="text">${cfReq?.ctalabel}</span></a></p>
-            <div data-aue-resource="${blockSelectedPath}">  
-              <p name="contentFragmentVariation" data-aue-prop="contentFragmentVariation">${v}</p>
-            </div>
 				</div>
 				<div class='banner-logo'></div>
 			</div>`;
