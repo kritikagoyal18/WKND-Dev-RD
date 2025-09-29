@@ -8,7 +8,7 @@ import { isAuthorEnvironment } from '../../scripts/scripts.js';
 export default async function decorate(block) {
 
 
-	<div data-aue-resource="{urn:aemconnection:/content/wknd-dev-rd/language-masters/en/jcr:content/root/section_1019903813/block_1745488473641_1750747414155}">  
+	<div data-aue-resource="urn:aemconnection:/content/wknd-dev-rd/language-masters/en/jcr:content/root/section_1019903813/block_1745488473641_1750747414155">  
 			<input name="variationName" type="hidden" data-aue-prop="contentFragmentVariation"/>
 		  <p name="variationNamep" data-aue-prop="contentFragmentVariation"></p>
     </div>
