@@ -212,9 +212,6 @@ const fetchAndRender = async (variationToUse) => {
 						<p data-aue-prop="subtitle" data-aue-label="SubTitle" data-aue-type="text" class='cfsubtitle'>${cfReq?.subtitle}</p>
 						<div data-aue-prop="description" data-aue-label="Description" data-aue-type="richtext" class='cfdescription'><p>${cfReq?.description?.plaintext || ''}</p></div>
 						<p class="button-container ${ctaStyle}"><a href="${cfReq?.ctaUrl ? cfReq.ctaUrl : '#'}" data-aue-prop="ctaUrl" data-aue-label="Button Link/URL" data-aue-type="reference"  target="_blank" rel="noopener" data-aue-filter="page" class='button'><span data-aue-prop="ctalabel" data-aue-label="Button Label" data-aue-type="text">${cfReq?.ctalabel}</span></a></p>
-						<div data-aue-resource="${itemId}">
-							<p name="variationName" data-aue-prop="contentFragmentVariation">${v}</p>
-						</div>
 				</div>
 				<div class='banner-logo'></div>
 			</div>`;
@@ -284,52 +281,16 @@ const fetchAndRender = async (variationToUse) => {
 		};
 	}
 
-	// Ensure UE connection (for auth headers), attempt initial author-side variation resolve, then render
-	await ensureUeConnection();
-	if (isAuthor && !variationname) {
-		try {
-			const overlayForBlock = document.querySelector(`button.overlay[data-resource^="urn:aemconnection:${contentPath}/jcr:content/data/"]`) || document.querySelector(`button.overlay[data-resource^="${contentPath}/jcr:content/data/"]`);
-			const findPrevRootOverlayLocal = (startEl) => {
-				try {
-					let el = startEl?.previousElementSibling || null;
-					while (el) {
-						const res = el.getAttribute && el.getAttribute('data-resource');
-						if (typeof res === 'string' && res.includes('/jcr:content/root/')) return el;
-						el = el.previousElementSibling;
-					}
-					let parent = startEl?.parentElement || null;
-					for (let i = 0; i < 3 && parent; i += 1) {
-						let sib = parent.previousElementSibling;
-						while (sib) {
-							const res = sib.getAttribute && sib.getAttribute('data-resource');
-							if (typeof res === 'string' && res.includes('/jcr:content/root/')) return sib;
-							sib = sib.previousElementSibling;
-						}
-						parent = parent.parentElement;
-					}
-					return null;
-				} catch (_) { return null; }
-			};
-			const prevRootBtn = overlayForBlock ? findPrevRootOverlayLocal(overlayForBlock) : null;
-			const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
-			const path = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
-			if (path) {
-				const cfRootModel = await fetchCfRootModelJson(path);
-				const json = cfRootModel?.json || null;
-				const resolved = json ? (function pick(node){ try{ if(!node||typeof node!=='object') return undefined; if(node.model==='contentfragment'&& typeof node.contentFragmentVariation==='string') return node.contentFragmentVariation; for(const k of Object.keys(node)){ const f=pick(node[k]); if(f!=null) return f; } return undefined; } catch(_){ return undefined; } })(json) : undefined;
-				if (typeof resolved === 'string' && resolved) {
-					variationname = resolved.toLowerCase().replace(' ', '_');
-					console.log('[content-fragment] initial variation resolved from node JSON:', variationname);
-				}
-			}
-		} catch (_) { /* ignore */ }
-	}
+	// Fallback to master variation if still empty
 	if (!variationname) {
 		variationname = 'master';
 		console.log('[content-fragment] variation fallback to default:', variationname);
 	}
+
+  // Ensure UE connection (for auth headers) then fetch using the consolidated helper
 	console.log('[content-fragment] using variationname:', variationname);
-	await fetchAndRender(variationname);
+  await ensureUeConnection();
+  await fetchAndRender(variationname);
 
 	// Universal Editor integration: when this content-fragment block is selected in author,
 	if (isAuthor && !block.__cfUeSelectAttached) {
@@ -351,6 +312,18 @@ const fetchAndRender = async (variationToUse) => {
     };
 
     const onUeSelect = async (e) => {
+      // Keep the authored variation field in sync when CF reference changes
+      try {
+        const detail = e?.detail || {};
+        const changedProp = detail?.prop || e?.target?.dataset?.aueProp || '';
+        if (changedProp === 'reference' && typeof variationname === 'string' && variationname) {
+          const snapshotBefore = block.querySelector('[data-aue-prop="variation"]')?.textContent || '';
+          if (snapshotBefore !== variationname) {
+            try { block.querySelector('[data-aue-prop="variation"]').textContent = variationname; } catch (_) {}
+            console.log('[content-fragment] variation synced to authored field:', { previous: snapshotBefore, next: variationname });
+          }
+        }
+      } catch (_) { /* ignore */ }
       console.log('[content-fragment] onUeSelect');
       const { target, detail } = e;
       if (!detail?.selected) return;
@@ -435,12 +408,14 @@ const fetchAndRender = async (variationToUse) => {
           // Log the change for observability
           console.log('[content-fragment] aue:prop:changed', { prop: changedProp, value: detail?.value });
 
-          // If the author changed the variation in the CF widget, use it for GraphQL
+          // If the author changed the variation in the CF widget, mirror it to the simple text field
           if (changedProp === 'contentFragmentVariation' && typeof detail?.value === 'string') {
             const next = String(detail.value).toLowerCase().replace(' ', '_');
-            if (variationname !== next) {
+            const snapshotBefore = block.querySelector('[data-aue-prop="variation"]')?.textContent || '';
+            if (snapshotBefore !== next) {
+              try { block.querySelector('[data-aue-prop="variation"]').textContent = next; } catch (_) {}
               variationname = next;
-              console.log('[content-fragment] variation updated from CF widget:', { next });
+              console.log('[content-fragment] variation synced from CF widget:', { previous: snapshotBefore, next });
               await fetchAndRender(variationname);
             }
             return;
