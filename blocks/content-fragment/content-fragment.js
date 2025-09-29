@@ -6,7 +6,6 @@ import { isAuthorEnvironment } from '../../scripts/scripts.js';
  * @param {Element} block
  */
 export default async function decorate(block) {
-	// Configuration
   const CONFIG = {
     WRAPPER_SERVICE_URL: 'https://prod-31.westus.logic.azure.com:443/workflows/2660b7afa9524acbae379074ae38501e/triggers/manual/paths/invoke',
     WRAPPER_SERVICE_PARAMS: 'api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=kfcQD5S7ovej9RHdGZFVfgvA-eEqNlb6r_ukuByZ64o',
@@ -31,20 +30,8 @@ export default async function decorate(block) {
   console.log('[content-fragment] init:', { isAuthor, contentPath });
 
 	// Resolve variation BEFORE fetching GraphQL: derive from page node JSON where model === 'contentfragment'
-	if (isAuthor && !variationname) {
-		// Try fast cache first (per page + CF path)
-		try {
-			const cacheKey = `cfVar:${window.location.pathname}:${contentPath}`;
-			const cached = window.sessionStorage && window.sessionStorage.getItem(cacheKey);
-			if (cached) {
-				variationname = cached;
-				console.log('[content-fragment] cache hit for variationname:', variationname);
-			} else {
-				console.log('[content-fragment] cache miss for variationname');
-			}
-		} catch (e) { console.warn('[content-fragment] cache error:', e?.message || e); }
-
-		// Helper: recursively find CF node for this block and return its variation
+	if (isAuthor) {
+    console.log('[content-fragment] attempting variation resolve');
 		const findCfVariationForPath = (node, cfPath) => {
 			try {
 				if (!node || typeof node !== 'object') return undefined;
@@ -62,32 +49,43 @@ export default async function decorate(block) {
 			} catch (_) { return undefined; }
 		};
 
-		// Attempt page JSON first (no overlays/selection dependency)
+
+		// Fallback 1: try overlay-based resolution (no selection) before defaulting
 		if (!variationname) {
-			try {
-				const authorBase = aemauthorurl || window.location.origin;
-				const pageUrl = `${authorBase}${window.location.pathname}.json`;
-				console.log('[content-fragment] fetching page JSON for variation:', pageUrl);
-				const res = await fetch(pageUrl, { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'include' });
-				console.log('[content-fragment] page JSON status:', res.status);
-				if (res.ok) {
-					const pageJson = await res.json();
-					const v = findCfVariationForPath(pageJson, contentPath);
+			console.log('[content-fragment] attempting overlay-based variation resolve');
+			// Helper: locate the CF item overlay button for this block
+			const findOverlayForBlock = () => {
+				return document.querySelector(`button.overlay[data-resource^=\"urn:aemconnection:${contentPath}/jcr:content/data/\"]`)
+					|| document.querySelector(`button.overlay[data-resource^=\"${contentPath}/jcr:content/data/\"]`);
+			};
+			const authorBase = aemauthorurl || window.location.origin;
+			for (let i = 0; i < 6 && !variationname; i += 1) {
+				const overlayForBlock = findOverlayForBlock();
+				if (!overlayForBlock) { await new Promise((r) => setTimeout(r, 300)); continue; }
+				console.log('[content-fragment] found overlay for block');
+				const prevRootBtn = findPrevRootOverlay(overlayForBlock);
+				const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
+				const path = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
+				if (!path) { await new Promise((r) => setTimeout(r, 200)); continue; }
+				const url = `${authorBase}${path}.json`;
+				console.log('[content-fragment] fetching block node JSON:', url);
+				try {
+					const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, credentials: 'include' });
+					console.log('[content-fragment] block node JSON status:', res.status);
+					if (!res.ok) { await new Promise((r) => setTimeout(r, 200)); continue; }
+					const json = await res.json();
+					const v = pickVariation(json);
 					if (v && typeof v === 'string') {
 						variationname = v.toLowerCase().replace(' ', '_');
-						console.log('[content-fragment] derived variation from page JSON:', variationname);
+						console.log('[content-fragment] derived variation from block node JSON:', variationname);
 						try {
 							const cacheKey = `cfVar:${window.location.pathname}:${contentPath}`;
 							window.sessionStorage && window.sessionStorage.setItem(cacheKey, variationname);
-							console.log('[content-fragment] cached variationname');
-						} catch (e) { console.warn('[content-fragment] cache write error:', e?.message || e); }
-					} else {
-						console.log('[content-fragment] no contentfragment node found in page JSON for contentPath');
+						} catch (_) { /* ignore */ }
+						break;
 					}
-				} else {
-					console.warn('[content-fragment] page JSON fetch failed:', res.status);
-				}
-			} catch (e) { console.warn('[content-fragment] page JSON resolution error:', e?.message || e); }
+				} catch (e) { console.warn('[content-fragment] overlay-based fetch error:', e?.message || e); }
+			}
 		}
 		// Helper: find previous page-root overlay button relative to a given overlay button
 		const findPrevRootOverlay = (startEl) => {
