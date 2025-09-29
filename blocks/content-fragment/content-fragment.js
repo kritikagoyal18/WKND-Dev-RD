@@ -91,14 +91,10 @@ export default async function decorate(block) {
 			if (!node || typeof node !== 'object') return undefined;
 			if (node.model === 'contentfragment' && typeof node.contentFragmentVariation === 'string') {
 				return node.contentFragmentVariation;
-			}
-			for (const key of Object.keys(node)) {
-				const child = node[key];
-				const found = pickVariation(child);
-				if (found != null) return found;
-			}
-			return undefined;
-		} catch (_) { return undefined; }
+			} else {
+        return "master";
+      }
+		} catch (_) { return "master"; }
 	};
 
 	const fetchCfRootModelJson = async (selectedPath) => {
@@ -117,7 +113,7 @@ export default async function decorate(block) {
 		} catch (_) { return null; }
 	};
 
-const fetchAndRender = async (variationToUse) => {
+  const fetchAndRender = async (variationToUse) => {
 		const v = (variationToUse || 'master');
 		if (block.__cfRenderedFor === v) {
 			console.log('[content-fragment] skip GraphQL (unchanged variation):', v);
@@ -266,29 +262,6 @@ const fetchAndRender = async (variationToUse) => {
       } catch (_) { return undefined; }
     };
 
-		// Helper: find previous page-root overlay button relative to a given overlay button
-		const findPrevRootOverlay = (startEl) => {
-			try {
-				let el = startEl?.previousElementSibling || null;
-				while (el) {
-					const res = el.getAttribute && el.getAttribute('data-resource');
-					if (typeof res === 'string' && res.includes('/jcr:content/root/')) return el;
-					el = el.previousElementSibling;
-				}
-				let parent = startEl?.parentElement || null;
-				for (let i = 0; i < 3 && parent; i += 1) {
-					let sib = parent.previousElementSibling;
-					while (sib) {
-						const res = sib.getAttribute && sib.getAttribute('data-resource');
-						if (typeof res === 'string' && res.includes('/jcr:content/root/')) return sib;
-						sib = sib.previousElementSibling;
-					}
-					parent = parent.parentElement;
-				}
-				return null;
-			} catch (_) { return null; }
-		};
-
 		// Helper: recursively pick contentFragmentVariation from JSON nodes
 		const pickVariation = (node) => {
 			try {
@@ -306,16 +279,37 @@ const fetchAndRender = async (variationToUse) => {
 		};
 	}
 
+	// Try resolve variation from authored block resource in author mode
+	if (isAuthor && !variationname) {
+		try {
+			// Ensure auth details for fetching JSON
+			await ensureUeConnection();
+			const authored = (block.dataset && (block.dataset.aueResource || block.dataset["aueResource"])) || '';
+			if (authored) {
+				const path = authored.replace('urn:aemconnection:', '');
+				const cfRootModel = await fetchCfRootModelJson(path);
+        console.log('[content-fragment] cfRootModel:', cfRootModel);
+				const json = cfRootModel?.json || null;
+        console.log('[content-fragment] json:', json);
+				const resolved = json ? pickVariation(json) : undefined;
+				if (typeof resolved === 'string' && resolved) {
+					variationname = resolved.toLowerCase().replace(' ', '_');
+					console.log('[content-fragment] variation resolved from authored resource:', variationname);
+				}
+			}
+		} catch (_) { /* ignore */ }
+	}
+
 	// Fallback to master variation if still empty
 	if (!variationname) {
 		variationname = 'master';
 		console.log('[content-fragment] variation fallback to default:', variationname);
 	}
 
-  // Ensure UE connection (for auth headers) then fetch using the consolidated helper
+	// Ensure UE connection (for auth headers) then fetch using the consolidated helper
 	console.log('[content-fragment] using variationname:', variationname);
-  await ensureUeConnection();
-  await fetchAndRender(variationname);
+	await ensureUeConnection();
+	await fetchAndRender(variationname);
 
 	// Universal Editor integration: when this content-fragment block is selected in author,
 	if (isAuthor && !block.__cfUeSelectAttached) {
