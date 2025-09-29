@@ -14,7 +14,7 @@ export default async function decorate(block) {
 	
 	const hostname = getMetadata('hostname');	
   const aemauthorurl = getMetadata('authorurl') || '';
-	
+
   const aempublishurl = hostname?.replace('author', 'publish')?.replace(/\/$/, '');  
 	
   const contentPath = block.querySelector(':scope div:nth-child(1) > div a')?.textContent?.trim();
@@ -220,65 +220,13 @@ export default async function decorate(block) {
 				<div class='banner-logo'></div>
 			</div>`;
 
-			// Derive variationname from first :scope element's data-aue-resource last segment
-			try {
-				const firstEl = block.querySelector(':scope *');
-        console.log('[content-fragment] firstEl:', firstEl);
-				const aueRes = firstEl && firstEl.getAttribute('data-aue-resource');
-        console.log('[content-fragment] aueRes:', aueRes);
-				if (aueRes) {
-					const lastSegment = aueRes.split('/').pop() || '';
-					const derived = String(lastSegment).toLowerCase().replace(' ', '_');
-          console.log('[content-fragment] derived:', derived);
-					if (derived) {
-						variationname = derived;
-						console.log('[content-fragment] variation derived from aueRes:', variationname);
-					}
-				}
-			} catch (_) { /* ignore */ }
-
 			block.__cfRenderedFor = v;
 			__cfInFlightVariation = '';
 
     } catch (_) { __cfInFlightVariation = ''; }
 	};
 
-	if (isAuthor) {
-    console.log('[content-fragment] attempting variation resolve');
-    const findCfVariationForPath = (node, cfPath) => {
-      try {
-        if (!node || typeof node !== 'object') return undefined;
-        if (node.model === 'contentfragment' && typeof node.reference === 'string') {
-          if (node.reference === cfPath) {
-            return node.contentFragmentVariation;
-          }
-        }
-        for (const key of Object.keys(node)) {
-          const child = node[key];
-          const found = findCfVariationForPath(child, cfPath);
-          if (found != null) return found;
-        }
-        return undefined;
-      } catch (_) { return undefined; }
-    };
-
-		// Helper: recursively pick contentFragmentVariation from JSON nodes
-		const pickVariation = (node) => {
-			try {
-				if (!node || typeof node !== 'object') return undefined;
-				if (node.model === 'contentfragment' && typeof node.contentFragmentVariation === 'string') {
-					return node.contentFragmentVariation;
-				}
-				for (const key of Object.keys(node)) {
-					const child = node[key];
-					const found = pickVariation(child);
-					if (found != null) return found;
-				}
-				return undefined;
-			} catch (_) { return undefined; }
-		};
-	}
-
+	// Remove legacy author helpers and proceed directly
 	// Try resolve variation from authored block resource in author mode
 	if (isAuthor && !variationname) {
 		try {
@@ -288,9 +236,7 @@ export default async function decorate(block) {
 			if (authored) {
 				const path = authored.replace('urn:aemconnection:', '');
 				const cfRootModel = await fetchCfRootModelJson(path);
-        console.log('[content-fragment] cfRootModel:', cfRootModel);
 				const json = cfRootModel?.json || null;
-        console.log('[content-fragment] json:', json);
 				const resolved = json ? pickVariation(json) : undefined;
 				if (typeof resolved === 'string' && resolved) {
 					variationname = resolved.toLowerCase().replace(' ', '_');
@@ -311,164 +257,46 @@ export default async function decorate(block) {
 	await ensureUeConnection();
 	await fetchAndRender(variationname);
 
-	// Universal Editor integration: when this content-fragment block is selected in author,
-	if (isAuthor && !block.__cfUeSelectAttached) {
-    console.log('[content-fragment] attaching UE select handler');
-    const getClosestResourceEl = (el) => el?.closest('[data-aue-resource]') || block.querySelector('[data-aue-resource]') || null;
-    const pickVariation = (node) => {
-      try {
-        if (!node || typeof node !== 'object') return undefined;
-        if (node.model === 'contentfragment' && typeof node.contentFragmentVariation === 'string') {
-          return node.contentFragmentVariation;
-        }
-        for (const key of Object.keys(node)) {
-          const child = node[key];
-          const found = pickVariation(child);
-          if (found != null) return found;
-        }
-        return undefined;
-      } catch (_) { return undefined; }
-    };
+	// Universal Editor integration (author): listen for property changes only (variation/reference)
+	if (isAuthor && !block.__cfPropChangedAttached) {
+		const onPropChanged = async (e) => {
+			try {
+				const { target, detail } = e || {};
+				if (!detail || !block.contains(target)) return;
+				const changedProp = detail?.prop || '';
+				console.log('[content-fragment] aue:prop:changed', { prop: changedProp, value: detail?.value });
 
-    const onUeSelect = async (e) => {
-      // Keep the authored variation field in sync when CF reference changes
-      try {
-        const detail = e?.detail || {};
-        const changedProp = detail?.prop || e?.target?.dataset?.aueProp || '';
-        if (changedProp === 'reference' && typeof variationname === 'string' && variationname) {
-          const snapshotBefore = block.querySelector('[data-aue-prop="variation"]')?.textContent || '';
-          if (snapshotBefore !== variationname) {
-            try { block.querySelector('[data-aue-prop="variation"]').textContent = variationname; } catch (_) {}
-            console.log('[content-fragment] variation synced to authored field:', { previous: snapshotBefore, next: variationname });
-          }
-        }
-      } catch (_) { /* ignore */ }
-      console.log('[content-fragment] onUeSelect');
-      const { target, detail } = e;
-      if (!detail?.selected) return;
-      if (!block.contains(target)) return;
-      const blockName = block.dataset.blockName || 'content-fragment';
-      const resourceEl = getClosestResourceEl(target);
-      const resource = resourceEl?.getAttribute('data-aue-resource') || null;
-      const selectedPath = resource ? resource.replace('urn:aemconnection:', '') : '';
-      // Determine the nearest previous overlay button with a page root path
-      const selectedOverlayBtn = (target.closest && target.closest('button.overlay,[data-resource]')) || null;
-      const findPrevRootOverlay = (startEl) => {
-        try {
-          let el = startEl?.previousElementSibling || null;
-          while (el) {
-            const res = el.getAttribute && el.getAttribute('data-resource');
-            if (typeof res === 'string' && res.includes('/jcr:content/root/')) return el;
-            el = el.previousElementSibling;
-          }
-          // walk up a couple levels to be safe
-          let parent = startEl?.parentElement || null;
-          for (let i = 0; i < 3 && parent; i += 1) {
-            let sib = parent.previousElementSibling;
-            while (sib) {
-              const res = sib.getAttribute && sib.getAttribute('data-resource');
-              if (typeof res === 'string' && res.includes('/jcr:content/root/')) return sib;
-              sib = sib.previousElementSibling;
-            }
-            parent = parent.parentElement;
-          }
-          return null;
-        } catch (_) { return null; }
-      };
-      const prevRootBtn = findPrevRootOverlay(selectedOverlayBtn);
-      const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
-      const blockSelectedPath = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
-      // eslint-disable-next-line no-console
-      console.log('[content-fragment] selected block path:', blockSelectedPath || selectedPath || '(none)');
-      const cfRootModel = await fetchCfRootModelJson(blockSelectedPath || selectedPath);
-      const json = cfRootModel?.json || null;
-      // reuse shared pickVariation
-      const contentFragmentVariation = json ? pickVariation(json) : undefined;
-      console.log('[content-fragment] contentFragmentVariation:', contentFragmentVariation ?? '(not found)');
-      if (contentFragmentVariation && typeof contentFragmentVariation === 'string') {
-        variationname = contentFragmentVariation.toLowerCase().replace(' ', '_');
-        await fetchAndRender(variationname);
-      }
-    };
+				if (changedProp === 'contentFragmentVariation' && typeof detail?.value === 'string') {
+					const next = String(detail.value).toLowerCase().replace(' ', '_');
+					if (variationname !== next) {
+						variationname = next;
+						await fetchAndRender(variationname);
+					}
+					return;
+				}
 
-    window.addEventListener('aue:ui-select', onUeSelect, true);
-    block.__cfUeSelectAttached = true;
-    block.__cfUeSelectHandler = onUeSelect;
+				if (changedProp === 'reference') {
+					await ensureUeConnection();
+					const authored = (block.dataset && (block.dataset.aueResource || block.dataset["aueResource"])) || '';
+					if (authored) {
+						const path = authored.replace('urn:aemconnection:', '');
+						const cfRootModel = await fetchCfRootModelJson(path);
+						const json = cfRootModel?.json || null;
+						const resolved = json ? pickVariation(json) : undefined;
+						if (typeof resolved === 'string' && resolved) {
+							const next = resolved.toLowerCase().replace(' ', '_');
+							if (variationname !== next) {
+								variationname = next;
+								await fetchAndRender(variationname);
+							}
+						}
+					}
+				}
+			} catch (_) { /* ignore */ }
+		};
 
-    // Also listen for property changes (e.g., aem-content-fragment reference/variation changes)
-    if (!block.__cfPropChangedAttached) {
-      const findPrevRootOverlayLocal = (startEl) => {
-        try {
-          let el = startEl?.previousElementSibling || null;
-          while (el) {
-            const res = el.getAttribute && el.getAttribute('data-resource');
-            if (typeof res === 'string' && res.includes('/jcr:content/root/')) return el;
-            el = el.previousElementSibling;
-          }
-          let parent = startEl?.parentElement || null;
-          for (let i = 0; i < 3 && parent; i += 1) {
-            let sib = parent.previousElementSibling;
-            while (sib) {
-              const res = sib.getAttribute && sib.getAttribute('data-resource');
-              if (typeof res === 'string' && res.includes('/jcr:content/root/')) return sib;
-              sib = sib.previousElementSibling;
-            }
-            parent = parent.parentElement;
-          }
-          return null;
-        } catch (_) { return null; }
-      };
-
-      const onPropChanged = async (e) => {
-        try {
-          const { target, detail } = e || {};
-          if (!detail || !block.contains(target)) return;
-          const changedProp = detail?.prop || '';
-          // Log the change for observability
-          console.log('[content-fragment] aue:prop:changed', { prop: changedProp, value: detail?.value });
-
-          // If the author changed the variation in the CF widget, mirror it to the simple text field
-          if (changedProp === 'contentFragmentVariation' && typeof detail?.value === 'string') {
-            const next = String(detail.value).toLowerCase().replace(' ', '_');
-            const snapshotBefore = block.querySelector('[data-aue-prop="variation"]')?.textContent || '';
-            if (snapshotBefore !== next) {
-              try { block.querySelector('[data-aue-prop="variation"]').textContent = next; } catch (_) {}
-              variationname = next;
-              console.log('[content-fragment] variation synced from CF widget:', { previous: snapshotBefore, next });
-              await fetchAndRender(variationname);
-            }
-            return;
-          }
-
-          // If the author changed the CF reference, best-effort resolve the new variation and sync
-          if (changedProp === 'reference') {
-            // Try to resolve page-root path via overlays and read model
-            const overlayForBlock = document.querySelector(`button.overlay[data-resource^="urn:aemconnection:${contentPath}/jcr:content/data/"]`) || document.querySelector(`button.overlay[data-resource^="${contentPath}/jcr:content/data/"]`);
-            const prevRootBtn = overlayForBlock ? findPrevRootOverlayLocal(overlayForBlock) : null;
-            const blockResource = prevRootBtn?.getAttribute?.('data-resource') || '';
-            const path = blockResource ? blockResource.replace('urn:aemconnection:', '') : '';
-            if (path) {
-              const cfRootModel = await fetchCfRootModelJson(path);
-              const json = cfRootModel?.json || null;
-              const resolved = json ? (function pick(node){ try{ if(!node||typeof node!=='object') return undefined; if(node.model==='contentfragment'&& typeof node.contentFragmentVariation==='string') return node.contentFragmentVariation; for(const k of Object.keys(node)){ const f=pick(node[k]); if(f!=null) return f; } return undefined; } catch(_){ return undefined; } })(json) : undefined;
-              if (typeof resolved === 'string' && resolved) {
-                const next = resolved.toLowerCase().replace(' ', '_');
-                const snapshotBefore = block.querySelector('[data-aue-prop="variation"]')?.textContent || '';
-                if (snapshotBefore !== next) {
-                  try { block.querySelector('[data-aue-prop="variation"]').textContent = next; } catch (_) {}
-                  variationname = next;
-                  console.log('[content-fragment] variation resolved after reference change:', { previous: snapshotBefore, next });
-                  await fetchAndRender(variationname);
-                }
-              }
-            }
-          }
-        } catch (_) { /* ignore */ }
-      };
-
-      window.addEventListener('aue:prop:changed', onPropChanged, true);
-      block.__cfPropChangedAttached = true;
-      block.__cfPropChangedHandler = onPropChanged;
-    }
-  }
+		window.addEventListener('aue:prop:changed', onPropChanged, true);
+		block.__cfPropChangedAttached = true;
+		block.__cfPropChangedHandler = onPropChanged;
+	}
 }
