@@ -1,21 +1,21 @@
 {
   "mappings": [
-    "/content/wknd-dev-rd/language-masters/en:/",
-    "/content/wknd-dev-rd/language-masters/en/:/en/",
-    "/content/wknd-dev-rd/language-masters/fr:/fr",
-    "/content/wknd-dev-rd/language-masters/fr/:/fr/",
-    "/content/wknd-dev-rd/language-masters/es:/es",
-    "/content/wknd-dev-rd/language-masters/es/:/es/",
-    "/content/wknd-dev-rd/language-masters/de:/de",
-    "/content/wknd-dev-rd/language-masters/de/:/de/",
-    "/content/wknd-dev-rd/configuration:/.helix/config.json",
-    "/content/wknd-dev-rd/metadata:/metadata.json",
-    "/content/wknd-dev-rd/redirects:/redirects.json",
-    "/content/wknd-dev-rd/placeholders:/placeholders.json",
-    "/content/wknd-dev-rd.resource/language-masters/en/query-index.json:/en/query-index.json"
+    "/content/kritika-test-site/language-masters/en:/",
+    "/content/kritika-test-site/language-masters/en/:/en/",
+    "/content/kritika-test-site/language-masters/fr:/fr",
+    "/content/kritika-test-site/language-masters/fr/:/fr/",
+    "/content/kritika-test-site/language-masters/es:/es",
+    "/content/kritika-test-site/language-masters/es/:/es/",
+    "/content/kritika-test-site/language-masters/de:/de",
+    "/content/kritika-test-site/language-masters/de/:/de/",
+    "/content/kritika-test-site/configuration:/.helix/config.json",
+    "/content/kritika-test-site/metadata:/metadata.json",
+    "/content/kritika-test-site/redirects:/redirects.json",
+    "/content/kritika-test-site/placeholders:/placeholders.json",
+    "/content/kritika-test-site.resource/language-masters/en/query-index.json:/en/query-index.json"
   ],
   "includes": [
-    "/content/wknd-dev-rd/",
-    "/content/dam/wknd-dev-rd/"
+    "/content/kritika-test-site/",
+    "/content/dam/kritika-test-site/"
   ]
 }
