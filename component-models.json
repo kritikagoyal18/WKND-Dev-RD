@@ -562,6 +562,15 @@
         "variationName": "contentFragmentVariation"
       },
       {
+        "component": "text",
+        "name": "variation",
+        "label": "Selected Variation",
+        "value": "",
+        "valueType": "string",
+        "description": "Persisted variation for publish; leave empty for master.",
+        "condition": { "==": [ { "var": "__alwaysFalse" }, true ] }
+      },
+      {
         "component": "select",
         "name": "displaystyle",
         "label": "Style",
