@@ -29,24 +29,6 @@ export default async function decorate(block) {
   const isAuthor = isAuthorEnvironment();
   console.log('[content-fragment] init:', { isAuthor, contentPath });
 
-	// Persist/read helpers for variation
-	const persistVariationToDom = (next) => {
-		try {
-			if (!next) return;
-			const col = block.querySelector(':scope div:nth-child(2) > div');
-			if (col && col.textContent !== next) col.textContent = next;
-		} catch (_) { /* ignore */ }
-	};
-	const readVariationFromPublishedDom = () => {
-		try {
-			const col = block.querySelector(':scope div:nth-child(2) > div');
-			const raw = col && col.textContent && col.textContent.trim();
-			const normalized = raw ? raw.toLowerCase().replace(' ', '_') : '';
-			console.log('[content-fragment] live: read variation from DOM column', { raw, normalized });
-			return normalized || '';
-		} catch (_) { return ''; }
-	};
-
 	// Log authored block resource (if present) right at load
 	try {
 		const authoredResource = block.dataset && (block.dataset.aueResource || block.dataset["aueResource"]) || '';
@@ -160,7 +142,6 @@ export default async function decorate(block) {
 			};
 
 		try {
-			if (!isAuthor) console.log('[content-fragment] live: fetching GraphQL with variation', v);
 			const response = await fetch(requestConfig.url, {
 				method: requestConfig.method,
 				headers: requestConfig.headers,
@@ -220,14 +201,12 @@ export default async function decorate(block) {
 				<div class='banner-logo'></div>
 			</div>`;
 
-			// Keep the plain field updated so publish can read it
-			persistVariationToDom(v);
-
 			block.__cfRenderedFor = v;
 
     } catch (_) { }
 	};
 
+	// Remove legacy author helpers and proceed directly
 	// Try resolve variation from authored block resource in author mode
 	if (isAuthor && !variationname) {
 		try {
@@ -241,53 +220,20 @@ export default async function decorate(block) {
 				const resolved = json ? pickVariation(json) : undefined;
 				if (typeof resolved === 'string' && resolved) {
 					variationname = resolved.toLowerCase().replace(' ', '_');
-					persistVariationToDom(variationname);
+					console.log('[content-fragment] variation resolved from authored resource:', variationname);
 				}
 			}
 		} catch (_) { /* ignore */ }
 	}
 
-	// Live/publish: read persisted variation from authored HTML
-	if (!isAuthor) {
-		const pubVar = readVariationFromPublishedDom();
-		if (pubVar) variationname = pubVar;
-	}
-
 	// Fallback to master variation if still empty
 	if (!variationname) {
 		variationname = 'master';
-		console.warn('[content-fragment] live: variation missing, falling back to', variationname);
+		console.log('[content-fragment] variation fallback to default:', variationname);
 	}
 
 	// Ensure UE connection (for auth headers) then fetch using the consolidated helper
 	console.log('[content-fragment] using variationname:', variationname);
 	await ensureUeConnection();
 	await fetchAndRender(variationname);
-
-	// Author: mirror contentFragmentVariation -> variation and persist to attribute
-	if (isAuthor && !block.__cfPropChangedAttached) {
-		const onPropChanged = async (e) => {
-			try {
-				const { target, detail } = e || {};
-				if (!detail || !block.contains(target)) return;
-				const changedProp = detail?.prop || '';
-
-				if (changedProp === 'contentFragmentVariation' && typeof detail?.value === 'string') {
-					const next = String(detail.value).toLowerCase().replace(' ', '_');
-					if (next) {
-						persistVariationToDom(next);
-						if (variationname !== next) {
-							variationname = next;
-							await fetchAndRender(variationname);
-						}
-					}
-					return;
-				}
-			} catch (_) { /* ignore */ }
-		};
-
-		window.addEventListener('aue:prop:changed', onPropChanged, true);
-		block.__cfPropChangedAttached = true;
-		block.__cfPropChangedHandler = onPropChanged;
-	}
 }
