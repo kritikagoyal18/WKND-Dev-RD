@@ -567,8 +567,7 @@
         "label": "Selected Variation",
         "value": "",
         "valueType": "string",
-        "description": "Persisted variation for publish; leave empty for master.",
-        "condition": { "==": [ { "var": "__alwaysTrue" }, true ] }
+        "description": "Persisted variation for publish; leave empty for master."
       },
       {
         "component": "select",
