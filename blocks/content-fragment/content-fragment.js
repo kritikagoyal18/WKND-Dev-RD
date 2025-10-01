@@ -20,6 +20,8 @@ export default async function decorate(block) {
   const contentPath = block.querySelector(':scope div:nth-child(1) > div a')?.textContent?.trim();
 	
 	let variationname = "";
+	const variation = block.querySelector(':scope div:nth-child(2) > div')?.textContent?.trim() || '';
+	console.log('[content-fragment] variation from nth-child(2):', variation);
 	const displayStyle = block.querySelector(':scope div:nth-child(3) > div')?.textContent?.trim() || '';
 	const alignment = block.querySelector(':scope div:nth-child(4) > div')?.textContent?.trim() || '';
 	const ctaStyle = block.querySelector(':scope div:nth-child(5) > div')?.textContent?.trim() || 'button';
