@@ -139,7 +139,6 @@ export default async function decorate(block) {
 		if (__cfAbort) { try { __cfAbort.abort(); } catch (_) {} }
 		const controller = new AbortController();
 		__cfAbort = controller;
-		const reqId = ++__cfRequestId;
 
 		// Prepare request configuration based on resolved variation
 		const requestConfig = isAuthor 
@@ -161,12 +160,12 @@ export default async function decorate(block) {
 
 		try {
 			if (!isAuthor) console.log('[content-fragment] live: fetching GraphQL with variation', v);
-			const response = await fetch(requestConfig.url, {
-				method: requestConfig.method,
-				headers: requestConfig.headers,
-				...(requestConfig.body && { body: requestConfig.body }),
-				signal: controller.signal
-			});
+
+      const response = await fetch(requestConfig.url, {
+        method: requestConfig.method,
+        headers: requestConfig.headers,
+        ...(requestConfig.body && { body: requestConfig.body })
+      });
 
       if (!response.ok) {
         console.error('[content-fragment] live: GraphQL non-OK', response.status);
