@@ -34,16 +34,23 @@ export default async function decorate(block) {
 		try {
 			if (!next) return;
 			const col = block.querySelector(':scope div:nth-child(2) > div');
-			if (col && col.textContent !== next) col.textContent = next;
+			if (col) {
+				if (col.textContent !== next) col.textContent = next;
+				// In author, bind the second column to UE so this value persists to JCR
+				if (isAuthor) {
+					if (col.getAttribute('data-aue-prop') !== 'variation') col.setAttribute('data-aue-prop', 'variation');
+					if (col.getAttribute('data-aue-type') !== 'text') col.setAttribute('data-aue-type', 'text');
+					if (!col.getAttribute('data-aue-label')) col.setAttribute('data-aue-label', 'Selected Variation');
+				}
+			}
 		} catch (_) { /* ignore */ }
 	};
 	const readVariationFromPublishedDom = () => {
 		try {
 			const col = block.querySelector(':scope div:nth-child(2) > div');
-			const raw = col && col.textContent && col.textContent.trim();
-			const normalized = raw ? raw.toLowerCase().replace(' ', '_') : '';
-			console.log('[content-fragment] live: read variation from DOM column', { raw, normalized });
-			return normalized || '';
+			const txt = col && col.textContent && col.textContent.trim();
+			if (txt) return txt.toLowerCase().replace(' ', '_');
+			return '';
 		} catch (_) { return ''; }
 	};
 
@@ -161,14 +168,28 @@ export default async function decorate(block) {
 		try {
 			if (!isAuthor) console.log('[content-fragment] live: fetching GraphQL with variation', v);
 
-      const response = await fetch(requestConfig.url, {
-        method: requestConfig.method,
-        headers: requestConfig.headers,
-        ...(requestConfig.body && { body: requestConfig.body })
-      });
+			const response = await fetch(requestConfig.url, {
+				method: requestConfig.method,
+				headers: requestConfig.headers,
+				...(requestConfig.body && { body: requestConfig.body }),
+				signal: controller.signal
+			});
+			if (reqId !== __cfRequestId) { 
+        return; 
+      }
 
       if (!response.ok) {
-        console.error('[content-fragment] live: GraphQL non-OK', response.status);
+				return;
+			}
+			let offer;
+			try {
+				offer = await response.json();
+      } catch (_) {
+				return;
+			}
+
+			const cfReq = offer?.data?.ctaByPath?.item;
+			if (!cfReq) {
 				return;
 			}
 
