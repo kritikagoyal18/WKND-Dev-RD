@@ -1,21 +1,21 @@
 {
   "mappings": [
-    "/content/wknd-dev-rd/language-masters/en:/",
-    "/content/wknd-dev-rd/language-masters/en/:/en/",
-    "/content/wknd-dev-rd/language-masters/fr:/fr",
-    "/content/wknd-dev-rd/language-masters/fr/:/fr/",
-    "/content/wknd-dev-rd/language-masters/es:/es",
-    "/content/wknd-dev-rd/language-masters/es/:/es/",
-    "/content/wknd-dev-rd/language-masters/de:/de",
-    "/content/wknd-dev-rd/language-masters/de/:/de/",
-    "/content/wknd-dev-rd/configuration:/.helix/config.json",
-    "/content/wknd-dev-rd/metadata:/metadata.json",
-    "/content/wknd-dev-rd/redirects:/redirects.json",
-    "/content/wknd-dev-rd/placeholders:/placeholders.json",
-    "/content/wknd-dev-rd.resource/language-masters/en/query-index.json:/en/query-index.json"
+    "/content/aemxsc-wknd/language-masters/en:/",
+    "/content/aemxsc-wknd/language-masters/en/:/en/",
+    "/content/aemxsc-wknd/language-masters/fr:/fr",
+    "/content/aemxsc-wknd/language-masters/fr/:/fr/",
+    "/content/aemxsc-wknd/language-masters/es:/es",
+    "/content/aemxsc-wknd/language-masters/es/:/es/",
+    "/content/aemxsc-wknd/language-masters/de:/de",
+    "/content/aemxsc-wknd/language-masters/de/:/de/",
+    "/content/aemxsc-wknd/configuration:/.helix/config.json",
+    "/content/aemxsc-wknd/metadata:/metadata.json",
+    "/content/aemxsc-wknd/redirects:/redirects.json",
+    "/content/aemxsc-wknd/placeholders:/placeholders.json",
+    "/content/aemxsc-wknd.resource/language-masters/en/query-index.json:/en/query-index.json"
   ],
   "includes": [
-    "/content/wknd-dev-rd/",
-    "/content/dam/wknd-dev-rd/"
+    "/content/aemxsc-wknd/",
+    "/content/dam/aemxsc-wknd/"
   ]
 }
