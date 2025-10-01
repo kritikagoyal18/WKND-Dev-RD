@@ -146,6 +146,7 @@ export default async function decorate(block) {
 		if (__cfAbort) { try { __cfAbort.abort(); } catch (_) {} }
 		const controller = new AbortController();
 		__cfAbort = controller;
+		const reqId = ++__cfRequestId;
 
 		// Prepare request configuration based on resolved variation
 		const requestConfig = isAuthor 
@@ -174,12 +175,12 @@ export default async function decorate(block) {
 				...(requestConfig.body && { body: requestConfig.body }),
 				signal: controller.signal
 			});
+
 			if (reqId !== __cfRequestId) { 
         return; 
       }
-
       if (!response.ok) {
-				return;
+				return;	
 			}
 			let offer;
 			try {
