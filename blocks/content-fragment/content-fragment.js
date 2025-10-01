@@ -247,10 +247,13 @@ export default async function decorate(block) {
 				const path = authored.replace('urn:aemconnection:', '');
 				const cfRootModel = await fetchCfRootModelJson(path);
 				const json = cfRootModel?.json || null;
+				console.log('[content-fragment] cfRootModel:', json);
 				const resolved = json ? pickVariation(json) : undefined;
+				console.log('[content-fragment] resolved:', resolved);
 				if (typeof resolved === 'string' && resolved) {
 					variationname = resolved.toLowerCase().replace(' ', '_');
 					persistVariationToDom(variationname);
+					console.log('[content-fragment] variationname:', variationname);
 				}
 			}
 		} catch (_) { /* ignore */ }
