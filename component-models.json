@@ -563,7 +563,7 @@
       },
       {
         "component": "text",
-        "name": "variation",
+        "name": "contentFragmentVariation",
         "label": "Selected Variation",
         "value": "",
         "valueType": "string",
