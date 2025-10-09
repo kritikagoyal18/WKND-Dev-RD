@@ -559,11 +559,11 @@
         "label": "Content Fragment Picker",
         "valueType": "string",
         "required": true,
-        "variationName": "contentFragmentVariation"
+        "variationName": "variation"
       },
       {
         "component": "text",
-        "name": "contentFragmentVariation",
+        "name": "variation",
         "label": "Selected Variation",
         "value": "",
         "valueType": "string",
